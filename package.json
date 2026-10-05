@@ -1,0 +1,12 @@
+{
+  "name": "yoonseo-family-album",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler pages dev public --port 8788",
+    "db:local": "wrangler d1 execute family-album --local --file=schema.sql",
+    "db:remote": "wrangler d1 execute family-album --remote --file=schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

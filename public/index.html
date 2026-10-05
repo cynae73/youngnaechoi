@@ -6,24 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>윤서네 가족앨범</title>
     <style>
-        :root { --navy: #13293d; --bg: #f5f3ef; --text: #222; }
+        :root { --bg: #f5f3ef; --card: #ffffff; --fg: #222222; --muted: #6f6f6f; --hero: #13293d; --ph: #dddddd; --shadow: rgba(0,0,0,.14); }
+        @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #12171c; --card: #1d252d; --fg: #e8ebee; --muted: #9aa5af; --hero: #0c1a28; --ph: #2a343d; --shadow: rgba(0,0,0,.5); color-scheme: dark; } }
+        :root[data-theme="dark"] { --bg: #12171c; --card: #1d252d; --fg: #e8ebee; --muted: #9aa5af; --hero: #0c1a28; --ph: #2a343d; --shadow: rgba(0,0,0,.5); color-scheme: dark; }
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; background: var(--bg); color: var(--text); }
+        body { margin: 0; font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; background: var(--bg); color: var(--fg); }
         a { color: inherit; text-decoration: none; }
-        .hero { background: var(--navy); color: #fff; text-align: center; padding: 40px 16px; }
+        .hero { background: var(--hero); color: #fff; text-align: center; padding: 40px 16px; }
         .hero h1 { margin: 0 0 8px; font-size: 2rem; }
         .hero p { margin: 0; opacity: .8; }
         .hero .back { display: inline-block; margin-bottom: 12px; opacity: .8; font-size: .95rem; }
         .grid { max-width: 1100px; margin: 24px auto; padding: 0 16px; display: grid; gap: 16px;
                 grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-        .item { margin: 0; background: #fff; border-radius: 10px; overflow: hidden; cursor: pointer; position: relative;
-                box-shadow: 0 1px 4px rgba(0,0,0,.12); transition: transform .2s, box-shadow .2s; }
-        .item:hover, .item:focus-visible { transform: translateY(-4px); box-shadow: 0 6px 14px rgba(0,0,0,.2); outline: none; }
-        .item img { display: block; width: 100%; aspect-ratio: 4/3; object-fit: cover; background: #ddd; }
+        .item { margin: 0; background: var(--card); border-radius: 10px; overflow: hidden; cursor: pointer; position: relative;
+                box-shadow: 0 1px 4px var(--shadow); transition: transform .2s, box-shadow .2s; }
+        .item:hover, .item:focus-visible { transform: translateY(-4px); box-shadow: 0 6px 14px var(--shadow); outline: none; }
+        .item img { display: block; width: 100%; aspect-ratio: 4/3; object-fit: cover; background: var(--ph); }
         .item figcaption { padding: 10px 12px; font-size: .95rem; }
-        .item small { display: block; color: #888; margin-top: 2px; }
+        .item small { display: block; color: var(--muted); margin-top: 2px; }
         .badge { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,.65); color: #fff; font-size: .75rem; padding: 3px 8px; border-radius: 999px; }
-        .empty { text-align: center; color: #888; padding: 60px 16px; }
+        .empty { text-align: center; color: var(--muted); padding: 60px 16px; }
         .viewer { position: fixed; inset: 0; background: rgba(0,0,0,.92); display: none; align-items: center; justify-content: center; flex-direction: column; z-index: 10; }
         .viewer.open { display: flex; }
         .viewer img, .viewer video { max-width: 94vw; max-height: 82vh; object-fit: contain; }
@@ -32,7 +34,8 @@
         .viewer .close { top: 8px; right: 12px; }
         .viewer .prev { left: 8px; top: 50%; }
         .viewer .next { right: 8px; top: 50%; }
-        footer { text-align: center; color: #888; font-size: .85rem; padding: 24px; }
+        footer a { text-decoration: underline; }
+        footer { text-align: center; line-height: 1.8; color: var(--muted); font-size: .85rem; padding: 24px; }
     </style>
 </head>
 
@@ -48,12 +51,11 @@
         <button class="next" aria-label="다음">&#8250;</button>
     </div>
 
-    <footer>사진을 누르면 크게 볼 수 있어요 (← → 키, 스와이프 가능)</footer>
+    <footer><a href="upload.html">+ 사진·영상 올리기</a><br>사진을 누르면 크게 볼 수 있어요 (← → 키, 스와이프 가능)</footer>
 
     <script>
-        // 앨범 데이터는 data/albums.json 에서 읽습니다.
-        // (다음 단계에서 이 부분이 서버 API(/api/albums)로 바뀝니다.)
-        const DATA_URL = "data/albums.json";
+        // 앨범 데이터: 서버(/api/albums)에서 읽고, 서버가 없으면(로컬 미리보기) data/albums.json 을 씁니다.
+        // data/albums.json 에 있는 샘플 앨범(솔비치)은 서버 앨범 뒤에 함께 보여줍니다.
 
         const hero = document.getElementById("hero");
         const grid = document.getElementById("grid");
@@ -63,12 +65,16 @@
         let currentItems = [];
 
         async function init() {
-            try {
-                const res = await fetch(DATA_URL);
-                albums = (await res.json()).albums || [];
-            } catch (e) {
-                albums = [];
-            }
+            const load = async url => {
+                try {
+                    const res = await fetch(url);
+                    if (!res.ok || !(res.headers.get("content-type") || "").includes("json")) return [];
+                    return (await res.json()).albums || [];
+                } catch (e) { return []; }
+            };
+            const [live, sample] = await Promise.all([load("api/albums"), load("data/albums.json")]);
+            const ids = new Set(live.map(a => a.id));
+            albums = [...live, ...sample.filter(a => !ids.has(a.id))];
             window.addEventListener("hashchange", render);
             render();
         }
@@ -100,7 +106,7 @@
                 <figure class="item" tabindex="0" data-i="${i}">
                     <img loading="lazy" src="${esc(it.thumb)}" alt="${esc(it.title)}">
                     ${it.type === "video" ? `<span class="badge">▶ 영상</span>` : ""}
-                    <figcaption>${esc(it.title)}</figcaption>
+                    ${it.title ? `<figcaption>${esc(it.title)}</figcaption>` : ""}
                 </figure>`).join("");
             window.scrollTo(0, 0);
         }
@@ -119,7 +125,7 @@
             media.innerHTML = it.type === "video"
                 ? `<video src="${esc(it.src)}" poster="${esc(it.thumb)}" controls autoplay playsinline></video>`
                 : `<img src="${esc(it.src)}" alt="${esc(it.title)}">`;
-            cap.textContent = `${it.title} (${cur + 1}/${n})`;
+            cap.textContent = `${it.title ? it.title + " " : ""}(${cur + 1}/${n})`;
         }
         function open(i) { show(i); viewer.classList.add("open"); }
         function close() { media.innerHTML = ""; viewer.classList.remove("open"); }
