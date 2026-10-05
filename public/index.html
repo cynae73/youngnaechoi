@@ -177,6 +177,29 @@
         .tile .mv:disabled { opacity: .35; cursor: default; }
         .tile.over { outline: 4px dashed #2a78c2; outline-offset: -4px; }
         .tile.dragging { opacity: .4; }
+        .tile .tcap { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 8px 6px; font-size: .78rem; line-height: 1.3; color: #fff; text-align: left;
+                      background: linear-gradient(180deg, transparent, rgba(10, 18, 28, .78)); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .tile .play { z-index: 1; }
+        .tile .mv.edit { left: 50%; margin-left: -22px; font-size: 1.1rem; }
+        .tile .mv.edit.has { background: #f3d98f; }
+        .confirm select { min-height: 40px; max-width: 100%; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--paper); color: var(--pink); font: inherit; }
+        .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+        .dlg { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(10, 18, 28, .7); }
+        .dlg[hidden] { display: none; }
+        .dlgbox { width: 100%; max-width: 420px; background: var(--paper); color: var(--pink); border-radius: 12px; padding: 18px; box-shadow: var(--shadow); display: grid; gap: 12px; }
+        .dlgbox h2 { margin: 0; font-family: var(--serif); font-size: 1.15rem; }
+        .dlgbox img { display: block; width: 100%; max-height: 38vh; object-fit: contain; background: var(--ph); border-radius: 6px; }
+        .dlgbox input { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: inherit; font: inherit; }
+        .dlgbox .row { display: flex; gap: 8px; }
+        .dlgbox .btn.outline { color: var(--pink); border-color: var(--pink); }
+        .dlgbox .status { color: var(--bsub); margin: 0; }
+        .viewer { padding-bottom: 88px; }
+        .viewer img, .viewer video { max-height: 70vh; }
+        .viewer .controls { position: absolute; left: 0; right: 0; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); display: flex; justify-content: center; gap: 10px; }
+        .viewer .controls button { position: static; width: auto; min-width: 48px; height: 48px; padding: 0 18px; border-radius: 999px; font-size: 1rem; }
+        .viewer .progress { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: rgba(255, 255, 255, .2); }
+        .viewer .progress[hidden] { display: none; }
+        .viewer .progress i { display: block; height: 100%; width: 0; background: #f3d98f; }
         .viewer .music { top: calc(10px + env(safe-area-inset-top, 0px)); left: 12px; font-size: 1.5rem; }
         .viewer .music.off { opacity: .6; }
         .viewer .music.off::after { content: ""; position: absolute; left: 11px; right: 11px; top: 50%; border-top: 3px solid #fff; transform: rotate(-40deg); }
@@ -226,6 +249,22 @@
         <div class="media" id="viewerMedia"></div>
         <p class="caption" id="viewerCap"></p>
         <button class="next" aria-label="다음 사진">&#8250;</button>
+        <div class="progress" id="progress" hidden><i id="progressBar"></i></div>
+        <div class="controls">
+            <button id="playBtn" type="button" aria-label="자동 재생 시작">▶ 자동 재생</button>
+            <button id="speedBtn" type="button" aria-label="사진 넘기는 간격 바꾸기">4초</button>
+        </div>
+    </div>
+
+    <div class="dlg" id="capDlg" role="dialog" aria-modal="true" aria-labelledby="capDlgT" hidden>
+        <form class="dlgbox" id="capForm">
+            <h2 id="capDlgT">사진 설명</h2>
+            <img id="capImg" alt="">
+            <label for="capInput" class="vh">사진 설명</label>
+            <input id="capInput" type="text" maxlength="100" placeholder="예: 처음 바다를 본 날" autocomplete="off">
+            <p class="status" id="capMsg" role="status"></p>
+            <div class="row"><button class="btn sm" type="submit">저장</button><button class="btn sm outline" type="button" id="capCancel">취소</button></div>
+        </form>
     </div>
 
     <script>
@@ -338,6 +377,7 @@
         /* ---------- 앨범 보기 / 편집 ---------- */
         let albumItems = [];
         const canEdit = a => authed && !a.sample;
+        let moveTarget = "";
 
         function renderAlbum(a) {
             document.title = `${a.title} - 윤서네 가족앨범`;
@@ -358,11 +398,18 @@
         function renderTools(a) {
             const wrap = document.getElementById("toolsWrap");
             if (!wrap) return;
-            if (!canEdit(a)) { wrap.innerHTML = ""; return; }
-            if (!editing) { wrap.innerHTML = `<div class="tools"><button class="btn sm outline" data-act="edit">편집</button></div>`; return; }
+            if (!editing || !canEdit(a)) {
+                wrap.innerHTML = `<div class="tools">${a.items.length ? `<button class="btn sm" data-slide="1">▶ 슬라이드쇼</button>` : ""}${canEdit(a) ? `<button class="btn sm outline" data-act="edit">편집</button>` : ""}</div>`;
+                return;
+            }
             const n = selected.size;
+            const others = albums.filter(x => x.id !== a.id && !x.sample);
             const confirm = confirmKind === "items"
                 ? `<div class="confirm" role="alertdialog"><p><b>${n}개</b>를 영구 삭제할까요? 되돌릴 수 없어요.</p><button class="btn sm danger" data-act="delok">삭제</button><button class="btn sm outline" data-act="cancel">취소</button></div>`
+                : confirmKind === "move"
+                ? `<div class="confirm" role="dialog"><p><b>${n}개</b>를 옮길 앨범을 고르세요. 새 앨범의 맨 뒤에 붙어요.</p>${others.length
+                    ? `<select id="moveTo" aria-label="이동할 앨범">${others.map(x => `<option value="${esc(x.id)}"${x.id === moveTarget ? " selected" : ""}>${esc(x.title)}</option>`).join("")}</select><button class="btn sm" data-act="moveok">이동</button>`
+                    : `<span>옮길 다른 앨범이 없어요. 올리기 화면에서 앨범을 먼저 만들어 주세요.</span>`}<button class="btn sm outline" data-act="cancel">취소</button></div>`
                 : confirmKind === "album"
                 ? `<div class="confirm" role="alertdialog"><p>앨범 '<b>${esc(a.title)}</b>'과 안의 사진·영상 ${a.items.length}개를 모두 삭제할까요? 되돌릴 수 없어요.</p><button class="btn sm danger" data-act="delalbumok">앨범 삭제</button><button class="btn sm outline" data-act="cancel">취소</button></div>`
                 : "";
@@ -370,6 +417,7 @@
                 <div class="tools">
                     <button class="btn sm" data-act="done">완료</button>
                     <button class="btn sm danger" data-act="del" ${n ? "" : "disabled"}>선택 삭제${n ? ` (${n})` : ""}</button>
+                    <button class="btn sm outline" data-act="move" ${n ? "" : "disabled"}>다른 앨범으로 이동</button>
                     <button class="btn sm outline" data-act="all" ${a.items.length ? "" : "disabled"}>${n && n === a.items.length ? "선택 해제" : "모두 선택"}</button>
                     <a class="btn sm outline" href="upload.html?album=${encodeURIComponent(a.id)}#music">음악 바꾸기</a>
                     <button class="btn sm outline" data-act="delalbum">앨범 삭제</button>
@@ -399,11 +447,13 @@
                         <span class="chk">${selected.has(it.id) ? "✓" : ""}</span><span class="idx">${i + 1}</span>
                         ${it.type === "video" ? `<span class="play">영상</span>` : ""}
                         <button class="mv prev" data-mv="-1" aria-label="앞으로 옮기기" ${i === 0 ? "disabled" : ""}>◀</button>
+                        <button class="mv edit${it.title ? " has" : ""}" data-edit="1" aria-label="${it.title ? "설명 고치기" : "설명 쓰기"}">✎</button>
                         <button class="mv next" data-mv="1" aria-label="뒤로 옮기기" ${i === a.items.length - 1 ? "disabled" : ""}>▶</button>
                     </div>`
                 : `<button class="tile" data-i="${i}" aria-label="${esc(it.title || a.title)} 크게 보기">
                         <img loading="lazy" src="${esc(it.thumb)}" alt="${esc(it.title)}">
                         ${it.type === "video" ? `<span class="play">영상</span>` : ""}
+                        ${it.title ? `<span class="tcap">${esc(it.title)}</span>` : ""}
                     </button>`).join("")}</div>`;
         }
 
@@ -458,6 +508,12 @@
         }
 
         head.addEventListener("click", async e => {
+            const slide = e.target.closest("[data-slide]");
+            if (slide) {
+                const al = currentAlbum();
+                if (al && al.items.length) openViewer(al.items.map(it => ({ ...it, music: al.music })), 0, slide, true);
+                return;
+            }
             const btn = e.target.closest("[data-act]");
             const a = currentAlbum();
             if (!btn || !a || !canEdit(a)) return;
@@ -471,6 +527,18 @@
                 }
                 else if (act === "del") { confirmKind = "items"; renderTools(a); }
                 else if (act === "delalbum") { confirmKind = "album"; renderTools(a); }
+                else if (act === "move") { moveTarget = ""; confirmKind = "move"; renderTools(a); }
+                else if (act === "moveok") {
+                    const to = document.getElementById("moveTo").value;
+                    const ids = a.items.filter(it => selected.has(it.id)).map(it => it.id);   // 지금 보이는 순서 그대로
+                    const dest = albums.find(x => x.id === to);
+                    setStatus("옮기는 중…");
+                    await api("api/items/move", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids, album_id: to }) });
+                    selected.clear(); confirmKind = "";
+                    await loadAlbums();
+                    statusMsg = `${ids.length}개를 '${dest ? dest.title : "다른"}' 앨범으로 옮겼어요.`; statusErr = false;
+                    draw();
+                }
                 else if (act === "cancel") { confirmKind = ""; renderTools(a); }
                 else if (act === "delok") {
                     const ids = [...selected];
@@ -491,12 +559,30 @@
             } catch (err) { confirmKind = ""; renderTools(a); handleError(err, "실패했어요. "); }
         });
 
+        head.addEventListener("change", e => { if (e.target.id === "moveTo") moveTarget = e.target.value; });
+
+        /* 앨범 카드를 누르면 첫 사진부터 슬라이드쇼로 열림 (Ctrl·⌘ 클릭은 새 탭으로 그대로) */
+        function onCardClick(e) {
+            if (e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+            const card = e.target.closest("a.polaroid");
+            if (!card) return;
+            const id = decodeURIComponent((card.getAttribute("href") || "").replace(/^#\/?/, ""));
+            const al = albums.find(x => x.id === id);
+            if (!al || !al.items.length) return;          // 비어 있으면 그냥 앨범 화면으로
+            e.preventDefault();
+            location.hash = "#/" + encodeURIComponent(id); // 닫으면 이 앨범의 사진 목록이 보임
+            openViewer(al.items.map(it => ({ ...it, music: al.music })), 0, card, true);
+        }
+        head.addEventListener("click", onCardClick);
+        main.addEventListener("click", onCardClick);
+
         /* 사진 칸 누르기 */
         main.addEventListener("click", e => {
             const t = e.target.closest(".tile");
             if (!t) return;
             const a = currentAlbum();
             if (t.classList.contains("editable")) {
+                if (e.target.closest("[data-edit]")) { openCaption(a, +t.dataset.i); return; }
                 const mv = e.target.closest(".mv");
                 if (mv) { if (!mv.disabled) { const i = +t.dataset.i; move(a, i, i + (+mv.dataset.mv), mv.dataset.mv); } return; }
                 toggleSelect(a, t);
@@ -542,6 +628,43 @@
             document.querySelectorAll(".tile.over, .tile.dragging").forEach(x => x.classList.remove("over", "dragging"));
         });
 
+        /* ---------- 사진 설명 달기 ---------- */
+        const capDlg = document.getElementById("capDlg");
+        const capInput = document.getElementById("capInput");
+        const capMsg = document.getElementById("capMsg");
+        let capItem = null, capAlbum = null, capOpener = null;
+        function openCaption(a, i) {
+            capAlbum = a; capItem = a.items[i];
+            capOpener = document.activeElement;
+            document.getElementById("capImg").src = capItem.thumb;
+            capInput.value = capItem.title || "";
+            capMsg.textContent = ""; capMsg.style.color = "";
+            capDlg.hidden = false;
+            capInput.focus(); capInput.select();
+        }
+        function closeCaption() { capDlg.hidden = true; if (capOpener && document.contains(capOpener)) capOpener.focus(); }
+        document.getElementById("capCancel").onclick = closeCaption;
+        capDlg.addEventListener("click", e => { if (e.target === capDlg) closeCaption(); });
+        document.getElementById("capForm").addEventListener("submit", async e => {
+            e.preventDefault();
+            const title = capInput.value.trim();
+            capMsg.textContent = "저장하는 중…"; capMsg.style.color = "";
+            try {
+                await api(`api/items/${encodeURIComponent(capItem.id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title }) });
+                capItem.title = title;
+                capDlg.hidden = true;
+                renderPhotos(capAlbum);
+                setStatus(title ? "설명을 저장했어요." : "설명을 지웠어요.");
+                const t = document.querySelector(`.tile[data-id="${CSS.escape(capItem.id)}"] [data-edit]`);
+                if (t) t.focus();
+            } catch (err) {
+                if (err.status === 401) authed = false;
+                capMsg.textContent = err.status === 401 ? "로그인이 풀렸어요. '사진·영상 올리기'에서 다시 로그인해 주세요." : err.message;
+                capMsg.style.color = "var(--err)";
+            }
+        });
+        document.addEventListener("keydown", e => { if (e.key === "Escape" && !capDlg.hidden) closeCaption(); });
+
         /* ---------- 확대 보기 + 앨범 음악 ---------- */
         const viewer = document.getElementById("viewer");
         const media = document.getElementById("viewerMedia");
@@ -571,6 +694,48 @@
             show(cur);
         };
 
+        /* 슬라이드쇼: 사진은 몇 초마다, 영상은 끝나면 다음으로. 마지막 장에서 멈춥니다. */
+        const playBtn = document.getElementById("playBtn");
+        const speedBtn = document.getElementById("speedBtn");
+        const progress = document.getElementById("progress");
+        const bar = document.getElementById("progressBar");
+        const SPEEDS = [3, 4, 6, 8];
+        let slideOn = false, slideSec = 4, slideTimer = null;
+        try { const v = +localStorage.getItem("fa_sec"); if (SPEEDS.includes(v)) slideSec = v; } catch (e) {}
+
+        function paintSlideUi() {
+            playBtn.textContent = slideOn ? "❚❚ 멈춤" : "▶ 자동 재생";
+            playBtn.setAttribute("aria-label", slideOn ? "자동 재생 멈추기" : "자동 재생 시작");
+            speedBtn.textContent = `${slideSec}초`;
+            progress.hidden = !slideOn;
+        }
+        function clearSlide() { clearTimeout(slideTimer); slideTimer = null; bar.style.transition = "none"; bar.style.width = "0"; }
+        function stopSlide() { slideOn = false; clearSlide(); paintSlideUi(); }
+        function advance() {
+            if (!slideOn) return;
+            if (cur >= list.length - 1) { stopSlide(); return; }
+            show(cur + 1);
+        }
+        function armSlide() {
+            clearSlide(); paintSlideUi();
+            if (!slideOn) return;
+            if (list[cur].type === "video") { const v = media.querySelector("video"); if (v) v.onended = advance; return; }
+            void bar.offsetWidth;
+            bar.style.transition = `width ${slideSec}s linear`; bar.style.width = "100%";
+            slideTimer = setTimeout(advance, slideSec * 1000);
+        }
+        playBtn.onclick = () => {
+            if (slideOn) { stopSlide(); return; }
+            slideOn = true;
+            if (cur >= list.length - 1 && list.length > 1) show(0); else armSlide();
+        };
+        speedBtn.onclick = () => {
+            slideSec = SPEEDS[(SPEEDS.indexOf(slideSec) + 1) % SPEEDS.length];
+            try { localStorage.setItem("fa_sec", String(slideSec)); } catch (e) {}
+            paintSlideUi();
+            if (slideOn) armSlide();
+        };
+
         function show(i) {
             cur = (i + list.length) % list.length;
             const it = list[cur];
@@ -580,15 +745,21 @@
             const track = syncMusic(it);
             const note = track && musicOn && it.type !== "video" ? `♪ ${esc(track.title)} · ` : "";
             cap.innerHTML = `${it.title ? esc(it.title) : ""}<small>${note}${it.album ? esc(it.album) + " · " : ""}${cur + 1} / ${list.length}</small>`;
+            const nx = list[(cur + 1) % list.length];
+            if (nx && nx.type !== "video") new Image().src = nx.src;   // 다음 사진 미리 받기
+            armSlide();
         }
-        function openViewer(items, i, from) {
+        function openViewer(items, i, from, autoplay = false) {
             list = items; opener = from;
+            slideOn = autoplay;
             show(i);
             viewer.classList.add("open");
             document.documentElement.classList.add("lock");
-            viewer.querySelector(".close").focus();
+            viewer.tabIndex = -1;
+            viewer.focus();            // 스페이스바가 '닫기'를 누르지 않도록 대화상자 자체에 포커스
         }
         function closeViewer() {
+            stopSlide();
             media.innerHTML = "";
             audio.pause();
             try { audio.currentTime = 0; } catch (e) {}
@@ -605,6 +776,7 @@
             if (e.key === "Escape") closeViewer();
             if (e.key === "ArrowLeft") show(cur - 1);
             if (e.key === "ArrowRight") show(cur + 1);
+            if (e.key === " " && !["BUTTON", "VIDEO", "INPUT"].includes(e.target.tagName)) { e.preventDefault(); playBtn.click(); }
         });
         let x0 = null;
         viewer.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
