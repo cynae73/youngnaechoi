@@ -5,7 +5,7 @@ const mediaUrl = key => "media/" + key.split("/").map(encodeURIComponent).join("
 // 앨범과 그 안의 사진·영상 목록 (누구나 볼 수 있음)
 export async function onRequestGet({ env }) {
   const [albums, items] = await Promise.all([
-    env.DB.prepare("SELECT id, title, description FROM albums ORDER BY created_at DESC").all(),
+    env.DB.prepare("SELECT id, title, description, created_at FROM albums ORDER BY created_at DESC").all(),
     env.DB.prepare("SELECT id, album_id, type, title, src_key, thumb_key FROM items ORDER BY created_at ASC").all(),
   ]);
   const byAlbum = new Map();
