@@ -675,23 +675,27 @@
         // 음악은 사진을 누르는 순간(사용자가 직접 조작한 순간)에 시작해야 휴대폰에서도 소리가 납니다.
         const audio = new Audio();
         audio.loop = true; audio.volume = 0.55; audio.preload = "none";
-        let musicOn = true;
+        let musicOn = true;           // 사용자가 ♪ 버튼으로 정한 켜짐/꺼짐 (기억됨)
+        let musicEnded = false;       // 슬라이드쇼가 끝까지 가서 음악이 멈춘 상태 (다시 시작하거나 ♪ 를 누르면 풀림)
         try { musicOn = localStorage.getItem("fa_music") !== "0"; } catch (e) {}
+        const musicActive = () => musicOn && !musicEnded;
 
         function syncMusic(it) {
             const track = it.music || null;
             musicBtn.hidden = !track;
-            musicBtn.classList.toggle("off", !musicOn);
-            musicBtn.setAttribute("aria-label", musicOn ? "음악 끄기" : "음악 켜기");
-            if (!track || !musicOn || it.type === "video") { audio.pause(); return track; }
+            musicBtn.classList.toggle("off", !musicActive());
+            musicBtn.setAttribute("aria-label", musicActive() ? "음악 끄기" : "음악 켜기");
+            if (!track || !musicActive() || it.type === "video") { audio.pause(); return track; }
             if (audio.getAttribute("data-src") !== track.src) { audio.src = track.src; audio.setAttribute("data-src", track.src); }
             audio.play().catch(() => {});
             return track;
         }
         musicBtn.onclick = () => {
-            musicOn = !musicOn;
+            if (musicEnded) { musicEnded = false; musicOn = true; }   // 끝나서 멈춘 음악은 한 번 눌러 다시 켬
+            else musicOn = !musicOn;
             try { localStorage.setItem("fa_music", musicOn ? "1" : "0"); } catch (e) {}
-            show(cur);
+            syncMusic(list[cur]);       // 사진·영상은 다시 불러오지 않고 음악만 바꿈
+            renderCap();
         };
 
         /* 슬라이드쇼: 사진은 몇 초마다, 영상은 끝나면 다음으로. 마지막 장에서 멈춥니다. */
@@ -713,7 +717,14 @@
         function stopSlide() { slideOn = false; clearSlide(); paintSlideUi(); }
         function advance() {
             if (!slideOn) return;
-            if (cur >= list.length - 1) { stopSlide(); return; }
+            if (cur >= list.length - 1) {          // 마지막 사진까지 끝남: 슬라이드쇼와 음악을 함께 멈춤
+                musicEnded = true;
+                stopSlide();
+                syncMusic(list[cur]);
+                try { audio.currentTime = 0; } catch (e) {}
+                renderCap();
+                return;
+            }
             show(cur + 1);
         }
         function armSlide() {
@@ -727,7 +738,11 @@
         playBtn.onclick = () => {
             if (slideOn) { stopSlide(); return; }
             slideOn = true;
-            if (cur >= list.length - 1 && list.length > 1) show(0); else armSlide();
+            const wasEnded = musicEnded;
+            musicEnded = false;                    // 새로 시작하면 음악도 다시 나옴
+            if (cur >= list.length - 1 && list.length > 1) show(0);
+            else if (wasEnded) show(cur);
+            else armSlide();
         };
         speedBtn.onclick = () => {
             slideSec = SPEEDS[(SPEEDS.indexOf(slideSec) + 1) % SPEEDS.length];
@@ -736,15 +751,19 @@
             if (slideOn) armSlide();
         };
 
+        function renderCap() {
+            const it = list[cur];
+            const note = it.music && musicActive() && it.type !== "video" ? `♪ ${esc(it.music.title)} · ` : "";
+            cap.innerHTML = `${it.title ? esc(it.title) : ""}<small>${note}${it.album ? esc(it.album) + " · " : ""}${cur + 1} / ${list.length}</small>`;
+        }
         function show(i) {
             cur = (i + list.length) % list.length;
             const it = list[cur];
             media.innerHTML = it.type === "video"
                 ? `<video src="${esc(it.src)}" poster="${esc(it.thumb)}" controls autoplay playsinline></video>`
                 : `<img src="${esc(it.src)}" alt="${esc(it.title)}">`;
-            const track = syncMusic(it);
-            const note = track && musicOn && it.type !== "video" ? `♪ ${esc(track.title)} · ` : "";
-            cap.innerHTML = `${it.title ? esc(it.title) : ""}<small>${note}${it.album ? esc(it.album) + " · " : ""}${cur + 1} / ${list.length}</small>`;
+            syncMusic(it);
+            renderCap();
             const nx = list[(cur + 1) % list.length];
             if (nx && nx.type !== "video") new Image().src = nx.src;   // 다음 사진 미리 받기
             armSlide();
@@ -752,6 +771,7 @@
         function openViewer(items, i, from, autoplay = false) {
             list = items; opener = from;
             slideOn = autoplay;
+            musicEnded = false;
             show(i);
             viewer.classList.add("open");
             document.documentElement.classList.add("lock");
