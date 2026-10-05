@@ -1,0 +1,13 @@
+name = "yoonseo-family-album"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "public"
+
+# Cloudflare 대시보드에서 만든 D1/R2 이름과 ID로 맞춰 주세요. (docs/SETUP.md 참고)
+[[d1_databases]]
+binding = "DB"
+database_name = "family-album"
+database_id = "00000000-0000-0000-0000-000000000000"
+
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "family-album"
