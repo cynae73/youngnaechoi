@@ -6,7 +6,7 @@ pages_build_output_dir = "public"
 [[d1_databases]]
 binding = "DB"
 database_name = "family-album"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "7cb29eca-251d-4e3e-8b28-25560deed5f6"
 
 [[r2_buckets]]
 binding = "BUCKET"
