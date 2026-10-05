@@ -1,0 +1,96 @@
+{
+  "albums": [
+    {
+      "id": "solbeach",
+      "title": "삼척 솔비치 여행",
+      "description": "윤서네 가족 삼척 솔비치 여행사진",
+      "cover": "albums/solbeach/thumbs/solbeach-3.jpg",
+      "items": [
+        {
+          "type": "photo",
+          "title": "윤서대디",
+          "thumb": "albums/solbeach/thumbs/solbeach-1.jpg",
+          "src": "albums/solbeach/photos/solbeach-1.jpg"
+        },
+        {
+          "type": "photo",
+          "title": "윤서는 홀로",
+          "thumb": "albums/solbeach/thumbs/solbeach-2.jpg",
+          "src": "albums/solbeach/photos/solbeach-2.jpg"
+        },
+        {
+          "type": "photo",
+          "title": "솔비치에서 바라본 바다",
+          "thumb": "albums/solbeach/thumbs/solbeach-3.jpg",
+          "src": "albums/solbeach/photos/solbeach-3.jpg"
+        },
+        {
+          "type": "photo",
+          "title": "삼척솔비치 4",
+          "thumb": "albums/solbeach/thumbs/solbeach-4.jpg",
+          "src": "albums/solbeach/photos/solbeach-4.jpg"
+        },
+        {
+          "type": "photo",
+          "title": "너는 누구?",
+          "thumb": "albums/solbeach/thumbs/solbeach-5.jpg",
+          "src": "albums/solbeach/photos/solbeach-5.jpg"
+        },
+        {
+          "type": "photo",
+          "title": "기다림",
+          "thumb": "albums/solbeach/thumbs/solbeach-6.jpg",
+          "src": "albums/solbeach/photos/solbeach-6.jpg"
+        },
+        {
+          "type": "photo",
+          "title": "윤서엄빠",
+          "thumb": "albums/solbeach/thumbs/solbeach-7.jpg",
+          "src": "albums/solbeach/photos/solbeach-7.jpg"
+        },
+        {
+          "type": "photo",
+          "title": "예쁜 윤서맘",
+          "thumb": "albums/solbeach/thumbs/solbeach-8.jpg",
+          "src": "albums/solbeach/photos/solbeach-8.jpg"
+        },
+        {
+          "type": "photo",
+          "title": "예쁜 윤서",
+          "thumb": "albums/solbeach/thumbs/solbeach-9.jpg",
+          "src": "albums/solbeach/photos/solbeach-9.jpg"
+        },
+        {
+          "type": "photo",
+          "title": "예쁜 윤서맘2",
+          "thumb": "albums/solbeach/thumbs/solbeach-10.jpg",
+          "src": "albums/solbeach/photos/solbeach-10.jpg"
+        },
+        {
+          "type": "photo",
+          "title": "예쁜 윤서맘3",
+          "thumb": "albums/solbeach/thumbs/solbeach-11.jpg",
+          "src": "albums/solbeach/photos/solbeach-11.jpg"
+        },
+        {
+          "type": "photo",
+          "title": "예쁜 윤서맘4",
+          "thumb": "albums/solbeach/thumbs/solbeach-12.jpg",
+          "src": "albums/solbeach/photos/solbeach-12.jpg"
+        },
+        {
+          "type": "photo",
+          "title": "예쁜 윤서맘5",
+          "thumb": "albums/solbeach/thumbs/solbeach-13.jpg",
+          "src": "albums/solbeach/photos/solbeach-13.jpg"
+        },
+        {
+          "type": "photo",
+          "title": "삼척솔비치 14",
+          "thumb": "albums/solbeach/thumbs/solbeach-14.jpg",
+          "src": "albums/solbeach/photos/solbeach-14.jpg"
+        }
+      ]
+    }
+  ]
+}
