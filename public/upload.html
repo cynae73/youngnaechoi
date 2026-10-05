@@ -4,19 +4,23 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@700&display=swap" rel="stylesheet">
     <title>사진·영상 올리기 - 윤서네 가족앨범</title>
     <style>
-        :root { --bg: #f5f3ef; --card: #ffffff; --fg: #222222; --muted: #6f6f6f; --hero: #13293d; --line: #d9d5cc; --accent: #13293d; --accent-fg: #ffffff; --ok: #1d7a46; --err: #b3261e; }
-        @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #12171c; --card: #1d252d; --fg: #e8ebee; --muted: #9aa5af; --hero: #0c1a28; --line: #34404a; --accent: #8fb8de; --accent-fg: #0c1a28; --ok: #5fcf8e; --err: #ff8a80; color-scheme: dark; } }
-        :root[data-theme="dark"] { --bg: #12171c; --card: #1d252d; --fg: #e8ebee; --muted: #9aa5af; --hero: #0c1a28; --line: #34404a; --accent: #8fb8de; --accent-fg: #0c1a28; --ok: #5fcf8e; --err: #ff8a80; color-scheme: dark; }
+        :root { --bg: #f9f2df; --card: #fffdf8; --fg: #14263d; --muted: #566275; --t1: #c4ddf2; --t2: #5f98c9; --hero-fg: #0b1f35; --line: #dcd2b8; --accent: #0b1f35; --accent-fg: #f9f2df; --ok: #1d7a46; --err: #b3261e; }
+        @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0f1a28; --card: #1c2c40; --fg: #f1e9d8; --muted: #a9b3c2; --t1: #274a73; --t2: #12304f; --hero-fg: #f3ecda; --line: #34404a; --accent: #f3ecda; --accent-fg: #0f1a28; --ok: #5fcf8e; --err: #ff8a80; color-scheme: dark; } }
+        :root[data-theme="dark"] { --bg: #0f1a28; --card: #1c2c40; --fg: #f1e9d8; --muted: #a9b3c2; --t1: #274a73; --t2: #12304f; --hero-fg: #f3ecda; --line: #34404a; --accent: #f3ecda; --accent-fg: #0f1a28; --ok: #5fcf8e; --err: #ff8a80; color-scheme: dark; }
         * { box-sizing: border-box; }
         [hidden] { display: none !important; }
         #uploader { display: grid; gap: 16px; }
         body { margin: 0; min-height: 100vh; font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; background: var(--bg); color: var(--fg); }
         a { color: inherit; }
-        .hero { background: var(--hero); color: #fff; text-align: center; padding: 32px 16px; }
-        .hero h1 { margin: 0 0 6px; font-size: 1.6rem; }
-        .hero a { opacity: .8; font-size: .95rem; }
+        .hero { background: linear-gradient(180deg, var(--t1), var(--t2)); color: var(--hero-fg); text-align: center; padding: 28px 16px 22px; }
+        .hero h1 { margin: 0 0 6px; font-family: "Noto Serif KR", serif; font-size: 1.6rem; }
+        .wave { display: block; line-height: 0; background: var(--bg); } .wave svg { display: block; width: 100%; height: 30px; } .wave .a { fill: var(--t2); } .wave .b { fill: var(--bg); }
+        .hero a { opacity: .85; font-size: .95rem; }
         main { max-width: 640px; margin: 24px auto; padding: 0 16px; display: grid; gap: 16px; }
         section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 12px; }
         h2 { margin: 0; font-size: 1.05rem; }
@@ -48,6 +52,7 @@
         <h1>사진·영상 올리기</h1>
         <a href="./">← 앨범으로 돌아가기</a>
     </header>
+    <div class="wave" aria-hidden="true"><svg viewBox="0 0 1200 40" preserveAspectRatio="none"><path class="a" d="M0 0 H1200 V14 C1050 40 950 -4 800 16 C650 36 550 -2 400 16 C250 34 120 4 0 22 Z"/><path class="b" d="M0 22 C120 4 250 34 400 16 C550 -2 650 36 800 16 C950 -4 1050 40 1200 14 V40 H0 Z"/></svg></div>
 
     <main>
         <section id="loginBox" hidden>
