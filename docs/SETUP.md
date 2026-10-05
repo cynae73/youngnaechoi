@@ -26,6 +26,26 @@ Pages 프로젝트 **Settings → Variables and Secrets** 에서 **Secret** 으�
 ## 4. 확인
 `https://…pages.dev/upload.html` 에 들어가 비밀번호를 입력하고 사진 한 장을 올려 보세요.
 
+## 순서 변경과 앨범 음악을 쓰려면 (D1 업데이트, 한 번만)
+삭제 기능은 바로 쓸 수 있지만, **순서 변경과 앨범 음악**은 데이터베이스에 칸을 두 개 더 만들어야 합니다.
+1. Cloudflare 대시보드에서 D1 `family-album`을 열고 **Console** 탭으로 갑니다.
+2. 아래 내용을 전부 붙여넣고 **Execute**를 누릅니다. (`migrations/001_order_and_music.sql` 파일과 같은 내용입니다.)
+3. 성공하면 끝입니다. **한 번만** 실행하세요. 두 번 실행하면 "duplicate column" 오류가 나지만 데이터는 그대로입니다.
+
+```sql
+ALTER TABLE items ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0;
+UPDATE items SET sort_order = created_at;
+ALTER TABLE albums ADD COLUMN music_key TEXT;
+ALTER TABLE albums ADD COLUMN music_title TEXT;
+```
+
+업데이트를 하기 전에도 사이트는 정상으로 보이고 올리기·삭제도 됩니다. 순서 변경과 음악만 "D1 업데이트가 필요해요"라고 안내됩니다.
+
+## 사용 방법
+- **삭제·순서 변경:** 로그인(올리기 화면에서 비밀번호 입력)한 뒤 앨범을 열면 **편집** 버튼이 보입니다. 사진을 눌러 고르고 **선택 삭제**, 순서는 ◀ ▶ 버튼(휴대폰·컴퓨터)이나 끌어서 놓기(컴퓨터)로 바꿉니다. **앨범 삭제**로 앨범 전체를 지울 수 있습니다. 삭제는 되돌릴 수 없어요.
+- **앨범 음악:** 올리기 화면의 "3. 앨범 음악"에서 앨범을 고르고 mp3 등을 등록합니다. 앨범마다 다른 곡을 쓸 수 있고, 사진을 크게 볼 때 흘러나옵니다. 저작권이 있는 곡은 올리지 마세요.
+- 처음 만든 샘플 앨범(솔비치)은 저장소 파일이라 편집할 수 없습니다. 편집하려면 사진을 올리기 화면에서 새로 올려 주세요.
+
 ## 내 컴퓨터에서 시험해 보기 (선택)
 ```
 npm install

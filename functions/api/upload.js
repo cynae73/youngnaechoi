@@ -35,9 +35,19 @@ export async function onRequestPost({ request, env }) {
 
   await env.BUCKET.put(srcKey, file.stream(), { httpMetadata: { contentType: file.type } });
   await env.BUCKET.put(thumbKey, thumb.stream(), { httpMetadata: { contentType: "image/jpeg" } });
-  await env.DB.prepare(
-    "INSERT INTO items (id, album_id, type, title, src_key, thumb_key, size, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-  ).bind(id, albumId, isVideo ? "video" : "photo", title, srcKey, thumbKey, file.size, Date.now()).run();
+  const now = Date.now();
+  const args = [id, albumId, isVideo ? "video" : "photo", title, srcKey, thumbKey, file.size, now];
+  try {
+    // 새 사진은 항상 맨 뒤에 붙도록 순서값(sort_order)에 현재 시각을 넣습니다.
+    await env.DB.prepare(
+      "INSERT INTO items (id, album_id, type, title, src_key, thumb_key, size, created_at, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    ).bind(...args, now).run();
+  } catch {
+    // D1 업데이트 전의 옛 구조
+    await env.DB.prepare(
+      "INSERT INTO items (id, album_id, type, title, src_key, thumb_key, size, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    ).bind(...args).run();
+  }
 
   return json({ id }, 201);
 }
