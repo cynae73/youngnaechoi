@@ -3,75 +3,187 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>윤서네 가족앨범</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #f5f3ef; --card: #ffffff; --fg: #222222; --muted: #6f6f6f; --hero: #13293d; --ph: #dddddd; --shadow: rgba(0,0,0,.14); }
-        @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #12171c; --card: #1d252d; --fg: #e8ebee; --muted: #9aa5af; --hero: #0c1a28; --ph: #2a343d; --shadow: rgba(0,0,0,.5); color-scheme: dark; } }
-        :root[data-theme="dark"] { --bg: #12171c; --card: #1d252d; --fg: #e8ebee; --muted: #9aa5af; --hero: #0c1a28; --ph: #2a343d; --shadow: rgba(0,0,0,.5); color-scheme: dark; }
+        /* 컨셉: 크림색 종이 위에 네이비 잉크. 앨범은 테이프로 붙인 폴라로이드, 손글씨 캡션. */
+        :root {
+            --bg: #f6f0e4;
+            --paper: #fffdf8;
+            --ink: #14263d;
+            --muted: #566275;
+            --line: rgba(20, 38, 61, .14);
+            --tape: rgba(206, 178, 130, .6);
+            --shadow: 0 1px 2px rgba(20, 38, 61, .12), 0 8px 20px rgba(20, 38, 61, .1);
+            --ph: #e6dcc8;
+            --overlay: rgba(10, 18, 28, .95);
+            --serif: "Noto Serif KR", "Nanum Myeongjo", "Apple SD Gothic Neo", serif;
+            --sans: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+            --hand: "Nanum Pen Script", "Noto Sans KR", cursive;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --bg: #0f1a28; --paper: #1a2a3d; --ink: #f1e9d8; --muted: #a9b3c2; --line: rgba(241, 233, 216, .16);
+                --tape: rgba(241, 233, 216, .22); --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 20px rgba(0, 0, 0, .35); --ph: #22344a;
+                color-scheme: dark;
+            }
+        }
+        :root[data-theme="dark"] {
+            --bg: #0f1a28; --paper: #1a2a3d; --ink: #f1e9d8; --muted: #a9b3c2; --line: rgba(241, 233, 216, .16);
+            --tape: rgba(241, 233, 216, .22); --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 20px rgba(0, 0, 0, .35); --ph: #22344a;
+            color-scheme: dark;
+        }
+
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; background: var(--bg); color: var(--fg); }
-        a { color: inherit; text-decoration: none; }
-        .hero { background: var(--hero); color: #fff; text-align: center; padding: 40px 16px; }
-        .hero h1 { margin: 0 0 8px; font-size: 2rem; }
-        .hero p { margin: 0; opacity: .8; }
-        .hero .back { display: inline-block; margin-bottom: 12px; opacity: .8; font-size: .95rem; }
-        .grid { max-width: 1100px; margin: 24px auto; padding: 0 16px; display: grid; gap: 16px;
-                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-        .item { margin: 0; background: var(--card); border-radius: 10px; overflow: hidden; cursor: pointer; position: relative;
-                box-shadow: 0 1px 4px var(--shadow); transition: transform .2s, box-shadow .2s; }
-        .item:hover, .item:focus-visible { transform: translateY(-4px); box-shadow: 0 6px 14px var(--shadow); outline: none; }
-        .item img { display: block; width: 100%; aspect-ratio: 4/3; object-fit: cover; background: var(--ph); }
-        .item figcaption { padding: 10px 12px; font-size: .95rem; }
-        .item small { display: block; color: var(--muted); margin-top: 2px; }
-        .badge { position: absolute; top: 8px; right: 8px; background: rgba(0,0,0,.65); color: #fff; font-size: .75rem; padding: 3px 8px; border-radius: 999px; }
-        .empty { text-align: center; color: var(--muted); padding: 60px 16px; }
-        .viewer { position: fixed; inset: 0; background: rgba(0,0,0,.92); display: none; align-items: center; justify-content: center; flex-direction: column; z-index: 10; }
+        [hidden] { display: none !important; }
+        html { scroll-behavior: smooth; }
+        html.lock { overflow: hidden; }
+        body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink); font: 400 1rem/1.7 var(--sans); overflow-x: hidden; }
+        a { color: inherit; }
+        button { font: inherit; color: inherit; }
+        :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; border-radius: 4px; }
+        img { max-width: 100%; }
+
+        .wrap { width: 100%; max-width: 1080px; margin-inline: auto; padding-inline: 20px; }
+
+        /* 상단 바 */
+        .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 18px; }
+        .brand { font-family: var(--serif); font-weight: 600; text-decoration: none; letter-spacing: .02em; }
+        .btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border: 1px solid var(--ink); border-radius: 999px;
+               text-decoration: none; font-weight: 500; background: transparent; cursor: pointer; transition: background .2s, color .2s; }
+        .btn:hover { background: var(--ink); color: var(--bg); }
+
+        /* 소개 */
+        .hero { display: grid; grid-template-columns: 1fr; gap: 28px; padding-block: 28px 12px; align-items: center; }
+        .eyebrow { font-family: var(--hand); font-size: 1.5rem; color: var(--muted); margin: 0; line-height: 1.2; }
+        .hero h1 { font-family: var(--serif); font-weight: 700; font-size: clamp(2.1rem, 7vw, 3.6rem); line-height: 1.2; margin: 6px 0 14px; text-wrap: balance; }
+        .hero p.lead { margin: 0 0 18px; color: var(--muted); max-width: 30em; }
+        .stats { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; padding: 14px 0 0; list-style: none; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+        .stats li { color: var(--muted); font-size: .95rem; }
+        .stats b { color: var(--ink); font-family: var(--serif); font-size: 1.25rem; margin-right: 2px; }
+        .hero-photo { display: none; }
+
+        /* 폴라로이드 */
+        .polaroid { position: relative; display: block; background: var(--paper); padding: 10px 10px 8px; border-radius: 3px; box-shadow: var(--shadow);
+                    text-decoration: none; transition: transform .25s ease, box-shadow .25s ease; }
+        .polaroid::before { content: ""; position: absolute; top: -11px; left: 50%; width: 76px; height: 22px; margin-left: -38px; background: var(--tape); transform: rotate(-2deg); }
+        .polaroid .frame { display: block; aspect-ratio: 1 / 1; background: var(--ph); overflow: hidden; }
+        .polaroid img { display: block; width: 100%; height: 100%; object-fit: cover; }
+        .polaroid .cap { display: block; padding: 10px 4px 4px; }
+        .polaroid .name { display: block; font-family: var(--hand); font-size: 1.45rem; line-height: 1.15; overflow-wrap: anywhere; }
+        .polaroid .meta { display: block; font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+        /* 섹션 */
+        section { padding-block: 28px; }
+        .sec-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 18px; }
+        .sec-title h2 { font-family: var(--serif); font-size: 1.35rem; margin: 0; }
+        .sec-title span { color: var(--muted); font-size: .9rem; }
+
+        .albums { display: grid; gap: 30px 18px; align-items: start; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); padding-block: 14px 6px; }
+        .albums .polaroid:nth-child(odd) { transform: rotate(-1deg); }
+        .albums .polaroid:nth-child(even) { transform: rotate(1.1deg); }
+        .albums .polaroid:hover, .albums .polaroid:focus-visible { transform: rotate(0) translateY(-6px); box-shadow: 0 2px 4px rgba(20, 38, 61, .14), 0 16px 30px rgba(20, 38, 61, .16); }
+
+        /* 최근 사진 줄 */
+        .strip { display: flex; gap: 12px; overflow-x: auto; padding: 4px 20px 14px; margin-inline: -20px; scroll-snap-type: x proximity; scroll-padding-inline: 20px; -webkit-overflow-scrolling: touch; }
+        .strip .tile { flex: 0 0 auto; width: 132px; scroll-snap-align: start; }
+
+        /* 사진 칸 */
+        .tile { position: relative; display: block; padding: 0; border: 0; background: var(--ph); border-radius: 4px; overflow: hidden; cursor: pointer; aspect-ratio: 1 / 1; }
+        .tile img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }
+        .tile:hover img { transform: scale(1.04); }
+        .tile .play { position: absolute; right: 8px; bottom: 8px; display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border-radius: 999px;
+                      background: rgba(10, 18, 28, .72); color: #fff; font-size: .8rem; }
+        .tile .play::before { content: ""; border-style: solid; border-width: 5px 0 5px 8px; border-color: transparent transparent transparent #fff; }
+        .photos { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); }
+        .photos .tile { aspect-ratio: 4 / 3; }
+
+        /* 앨범 상세 머리 */
+        .album-head { padding-block: 10px 6px; }
+        .back { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; color: var(--muted); }
+        .back:hover { color: var(--ink); }
+        .album-head h1 { font-family: var(--serif); font-size: clamp(1.8rem, 5.5vw, 2.6rem); margin: 0 0 6px; line-height: 1.25; text-wrap: balance; }
+        .album-head p { margin: 0; color: var(--muted); }
+
+        .empty { text-align: center; padding: 56px 16px; color: var(--muted); }
+        .empty .hand { font-family: var(--hand); font-size: 2rem; color: var(--ink); display: block; margin-bottom: 6px; }
+
+        footer { margin-top: 24px; border-top: 1px solid var(--line); padding-block: 26px 40px; text-align: center; color: var(--muted); font-size: .9rem; }
+        footer p { margin: 10px 0 0; }
+
+        /* 확대 보기 */
+        .viewer { position: fixed; inset: 0; z-index: 20; display: none; flex-direction: column; align-items: center; justify-content: center; background: var(--overlay); padding: 56px 12px 20px; }
         .viewer.open { display: flex; }
-        .viewer img, .viewer video { max-width: 94vw; max-height: 82vh; object-fit: contain; }
-        .viewer p { color: #fff; margin: 12px 0 0; }
-        .viewer button { position: absolute; background: none; border: 0; color: #fff; font-size: 2.4rem; cursor: pointer; padding: 12px; }
-        .viewer .close { top: 8px; right: 12px; }
-        .viewer .prev { left: 8px; top: 50%; }
-        .viewer .next { right: 8px; top: 50%; }
-        footer a { text-decoration: underline; }
-        footer { text-align: center; line-height: 1.8; color: var(--muted); font-size: .85rem; padding: 24px; }
+        .viewer .media { display: flex; align-items: center; justify-content: center; max-width: 100%; }
+        .viewer img, .viewer video { max-width: 94vw; max-height: 78vh; object-fit: contain; border-radius: 2px; }
+        .viewer .caption { margin: 14px 0 0; color: #f1e9d8; text-align: center; max-width: 90vw; }
+        .viewer .caption small { display: block; color: #b8c0cc; font-variant-numeric: tabular-nums; }
+        .viewer button { position: absolute; width: 48px; height: 48px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .12); color: #fff; font-size: 1.8rem; line-height: 1; cursor: pointer; }
+        .viewer button:hover { background: rgba(255, 255, 255, .24); }
+        .viewer button:focus-visible { outline-color: #fff; }
+        .viewer .close { top: calc(10px + env(safe-area-inset-top, 0px)); right: 12px; }
+        .viewer .prev { left: 10px; top: 50%; margin-top: -24px; }
+        .viewer .next { right: 10px; top: 50%; margin-top: -24px; }
+
+        @media (min-width: 720px) {
+            .wrap { padding-inline: 32px; }
+            .hero { grid-template-columns: 1.15fr .85fr; gap: 56px; padding-block: 48px 20px; }
+            .hero-photo { display: block; max-width: 300px; justify-self: center; transform: rotate(2.2deg); }
+            .strip { padding-inline: 32px; margin-inline: -32px; scroll-padding-inline: 32px; }
+            .albums { gap: 36px 24px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); }
+            .polaroid .name { font-size: 1.7rem; }
+            .strip .tile { width: 160px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            .polaroid, .tile img, .btn { transition: none; }
+            .albums .polaroid:hover, .albums .polaroid:focus-visible { transform: none; }
+        }
     </style>
 </head>
 
 <body>
-    <header class="hero" id="hero"></header>
-    <main class="grid" id="grid"></main>
+    <div class="wrap">
+        <header class="topbar">
+            <a class="brand" href="#/">윤서네 가족앨범</a>
+            <a class="btn" href="upload.html">사진·영상 올리기</a>
+        </header>
 
-    <div class="viewer" id="viewer" role="dialog" aria-modal="true">
-        <button class="close" aria-label="닫기">&times;</button>
-        <button class="prev" aria-label="이전">&#8249;</button>
-        <div id="viewerMedia"></div>
-        <p id="viewerCap"></p>
-        <button class="next" aria-label="다음">&#8250;</button>
+        <main id="main"></main>
+
+        <footer>
+            <a class="btn" href="upload.html">사진·영상 올리기</a>
+            <p>사진을 누르면 크게 볼 수 있어요. 키보드 ← → 와 스와이프로 넘겨 보세요.</p>
+        </footer>
     </div>
 
-    <footer><a href="upload.html">+ 사진·영상 올리기</a><br>사진을 누르면 크게 볼 수 있어요 (← → 키, 스와이프 가능)</footer>
+    <div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="사진 크게 보기">
+        <button class="close" aria-label="닫기">&times;</button>
+        <button class="prev" aria-label="이전 사진">&#8249;</button>
+        <div class="media" id="viewerMedia"></div>
+        <p class="caption" id="viewerCap"></p>
+        <button class="next" aria-label="다음 사진">&#8250;</button>
+    </div>
 
     <script>
-        // 앨범 데이터: 서버(/api/albums)에서 읽고, 서버가 없으면(로컬 미리보기) data/albums.json 을 씁니다.
-        // data/albums.json 에 있는 샘플 앨범(솔비치)은 서버 앨범 뒤에 함께 보여줍니다.
-
-        const hero = document.getElementById("hero");
-        const grid = document.getElementById("grid");
+        // 앨범 데이터: 서버(api/albums)에서 읽고, 서버가 없으면 data/albums.json(샘플)을 씁니다.
+        // 샘플 앨범(솔비치)은 서버 앨범 뒤에 함께 보여줍니다.
+        const main = document.getElementById("main");
         const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-
         let albums = [];
-        let currentItems = [];
+
+        async function load(url) {
+            try {
+                const res = await fetch(url);
+                if (!res.ok || !(res.headers.get("content-type") || "").includes("json")) return [];
+                return (await res.json()).albums || [];
+            } catch (e) { return []; }
+        }
 
         async function init() {
-            const load = async url => {
-                try {
-                    const res = await fetch(url);
-                    if (!res.ok || !(res.headers.get("content-type") || "").includes("json")) return [];
-                    return (await res.json()).albums || [];
-                } catch (e) { return []; }
-            };
             const [live, sample] = await Promise.all([load("api/albums"), load("data/albums.json")]);
             const ids = new Set(live.map(a => a.id));
             albums = [...live, ...sample.filter(a => !ids.has(a.id))];
@@ -79,68 +191,140 @@
             render();
         }
 
+        const count = (items, type) => items.filter(i => i.type === type).length;
+        function monthLabel(ts) {
+            if (!ts) return "";
+            const d = new Date(ts);
+            return `${d.getFullYear()}년 ${d.getMonth() + 1}월`;
+        }
+        function albumMeta(a) {
+            const v = count(a.items, "video"), p = a.items.length - v;
+            return [monthLabel(a.created_at), `사진 ${p}`, v ? `영상 ${v}` : ""].filter(Boolean).join(" · ");
+        }
+
         function render() {
             const id = decodeURIComponent(location.hash.replace(/^#\/?/, ""));
             const album = albums.find(a => a.id === id);
             album ? renderAlbum(album) : renderHome();
-        }
-
-        function renderHome() {
-            document.title = "윤서네 가족앨범";
-            hero.innerHTML = `<h1>윤서네 가족앨범</h1><p>우리 가족의 사진과 영상</p>`;
-            if (!albums.length) { grid.innerHTML = `<div class="empty">아직 앨범이 없어요.</div>`; return; }
-            grid.innerHTML = albums.map(a => `
-                <a class="item" href="#/${encodeURIComponent(a.id)}">
-                    <img loading="lazy" src="${esc(a.cover)}" alt="${esc(a.title)}">
-                    <figcaption>${esc(a.title)}<small>${a.items.length}개</small></figcaption>
-                </a>`).join("");
-        }
-
-        function renderAlbum(a) {
-            document.title = `${a.title} - 윤서네 가족앨범`;
-            const videos = a.items.filter(i => i.type === "video").length;
-            hero.innerHTML = `<a class="back" href="#/">← 전체 앨범</a><h1>${esc(a.title)}</h1>
-                <p>${esc(a.description || "")} · 사진 ${a.items.length - videos}장${videos ? ` · 영상 ${videos}개` : ""}</p>`;
-            currentItems = a.items;
-            grid.innerHTML = a.items.map((it, i) => `
-                <figure class="item" tabindex="0" data-i="${i}">
-                    <img loading="lazy" src="${esc(it.thumb)}" alt="${esc(it.title)}">
-                    ${it.type === "video" ? `<span class="badge">▶ 영상</span>` : ""}
-                    ${it.title ? `<figcaption>${esc(it.title)}</figcaption>` : ""}
-                </figure>`).join("");
             window.scrollTo(0, 0);
         }
 
-        grid.addEventListener("click", e => { const f = e.target.closest("figure.item"); if (f) open(+f.dataset.i); });
-        grid.addEventListener("keydown", e => { const f = e.target.closest("figure.item"); if (f && e.key === "Enter") open(+f.dataset.i); });
+        function polaroid(a) {
+            return `<a class="polaroid" href="#/${encodeURIComponent(a.id)}">
+                <span class="frame">${a.cover ? `<img loading="lazy" src="${esc(a.cover)}" alt="">` : ""}</span>
+                <span class="cap"><span class="name">${esc(a.title)}</span><span class="meta">${esc(albumMeta(a))}</span></span>
+            </a>`;
+        }
 
+        let recent = [];
+        function renderHome() {
+            document.title = "윤서네 가족앨범";
+            if (!albums.length) {
+                main.innerHTML = `<div class="empty"><span class="hand">아직 앨범이 없어요</span>오른쪽 위 '사진·영상 올리기'에서 첫 앨범을 만들어 보세요.</div>`;
+                return;
+            }
+            const all = albums.flatMap(a => a.items);
+            const photos = count(all, "photo"), videos = count(all, "video");
+            const first = albums[0];
+            recent = albums.flatMap(a => a.items.slice(-6).reverse().map(it => ({ ...it, album: a.title }))).slice(0, 12);
+
+            main.innerHTML = `
+                <div class="hero">
+                    <div>
+                        <p class="eyebrow">우리 가족의 시간</p>
+                        <h1>함께한 순간을<br>차곡차곡 모았어요</h1>
+                        <p class="lead">여행, 생일, 평범한 하루까지. 가족이 찍은 사진과 영상을 한곳에서 편하게 꺼내 보세요.</p>
+                        <ul class="stats">
+                            <li><b>${albums.length}</b>앨범</li>
+                            <li><b>${photos.toLocaleString("ko-KR")}</b>사진</li>
+                            <li><b>${videos.toLocaleString("ko-KR")}</b>영상</li>
+                        </ul>
+                    </div>
+                    <div class="hero-photo">${polaroid(first)}</div>
+                </div>
+
+                <section aria-labelledby="albumsTitle">
+                    <div class="sec-title"><h2 id="albumsTitle">앨범</h2><span>${albums.length}개</span></div>
+                    <div class="albums">${albums.map(polaroid).join("")}</div>
+                </section>
+
+                ${recent.length ? `<section aria-labelledby="recentTitle">
+                    <div class="sec-title"><h2 id="recentTitle">최근 올라온 사진</h2><span>옆으로 넘겨 보세요</span></div>
+                    <div class="strip" id="strip">${recent.map((it, i) => `
+                        <button class="tile" data-i="${i}" aria-label="${esc(it.title || it.album)} 크게 보기">
+                            <img loading="lazy" src="${esc(it.thumb)}" alt="">
+                            ${it.type === "video" ? `<span class="play">영상</span>` : ""}
+                        </button>`).join("")}</div>
+                </section>` : ""}`;
+        }
+
+        let albumItems = [];
+        function renderAlbum(a) {
+            document.title = `${a.title} - 윤서네 가족앨범`;
+            albumItems = a.items;
+            main.innerHTML = `
+                <div class="album-head">
+                    <a class="back" href="#/">← 전체 앨범</a>
+                    <h1>${esc(a.title)}</h1>
+                    <p>${esc([a.description, albumMeta(a)].filter(Boolean).join(" · "))}</p>
+                </div>
+                <section>
+                    ${a.items.length ? `<div class="photos" id="photos">${a.items.map((it, i) => `
+                        <button class="tile" data-i="${i}" aria-label="${esc(it.title || a.title)} 크게 보기">
+                            <img loading="lazy" src="${esc(it.thumb)}" alt="${esc(it.title)}">
+                            ${it.type === "video" ? `<span class="play">영상</span>` : ""}
+                        </button>`).join("")}</div>`
+                    : `<div class="empty"><span class="hand">비어 있는 앨범이에요</span>'사진·영상 올리기'에서 첫 사진을 올려 보세요.</div>`}
+                </section>`;
+        }
+
+        main.addEventListener("click", e => {
+            const t = e.target.closest(".tile");
+            if (!t) return;
+            const i = +t.dataset.i;
+            if (t.closest("#strip")) openViewer(recent, i, t);
+            else openViewer(albumItems, i, t);
+        });
+
+        /* 확대 보기 */
         const viewer = document.getElementById("viewer");
         const media = document.getElementById("viewerMedia");
         const cap = document.getElementById("viewerCap");
-        let cur = 0;
+        let list = [], cur = 0, opener = null;
+
         function show(i) {
-            const n = currentItems.length;
-            cur = (i + n) % n;
-            const it = currentItems[cur];
+            cur = (i + list.length) % list.length;
+            const it = list[cur];
             media.innerHTML = it.type === "video"
                 ? `<video src="${esc(it.src)}" poster="${esc(it.thumb)}" controls autoplay playsinline></video>`
                 : `<img src="${esc(it.src)}" alt="${esc(it.title)}">`;
-            cap.textContent = `${it.title ? it.title + " " : ""}(${cur + 1}/${n})`;
+            cap.innerHTML = `${it.title ? esc(it.title) : ""}<small>${it.album ? esc(it.album) + " · " : ""}${cur + 1} / ${list.length}</small>`;
         }
-        function open(i) { show(i); viewer.classList.add("open"); }
-        function close() { media.innerHTML = ""; viewer.classList.remove("open"); }
-        viewer.querySelector(".close").onclick = close;
+        function openViewer(items, i, from) {
+            list = items; opener = from;
+            show(i);
+            viewer.classList.add("open");
+            document.documentElement.classList.add("lock");
+            viewer.querySelector(".close").focus();
+        }
+        function closeViewer() {
+            media.innerHTML = "";
+            viewer.classList.remove("open");
+            document.documentElement.classList.remove("lock");
+            if (opener && document.contains(opener)) opener.focus();
+        }
+        viewer.querySelector(".close").onclick = closeViewer;
         viewer.querySelector(".prev").onclick = () => show(cur - 1);
         viewer.querySelector(".next").onclick = () => show(cur + 1);
-        viewer.addEventListener("click", e => { if (e.target === viewer) close(); });
+        viewer.addEventListener("click", e => { if (e.target === viewer) closeViewer(); });
         document.addEventListener("keydown", e => {
             if (!viewer.classList.contains("open")) return;
-            if (e.key === "Escape") close();
+            if (e.key === "Escape") closeViewer();
             if (e.key === "ArrowLeft") show(cur - 1);
             if (e.key === "ArrowRight") show(cur + 1);
         });
         let x0 = null;
-        viewer.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; });
+        viewer.addEventListener("touchstart", e => { x0 = e.touches[0].clientX; }, { passive: true });
         viewer.addEventListener("touchend", e => {
             if (x0 === null) return;
             const dx = e.changedTouches[0].clientX - x0;
