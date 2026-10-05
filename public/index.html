@@ -21,7 +21,7 @@
             --line: rgba(20, 38, 61, .16);
             --tape: rgba(206, 178, 130, .65);
             --shadow: 0 1px 2px rgba(20, 38, 61, .14), 0 8px 18px rgba(20, 38, 61, .16);
-            --ph: #e6dcc8;
+            --ph: #e6dcc8; --err: #a61b13;
             --overlay: rgba(10, 18, 28, .95);
             --serif: "Noto Serif KR", "Nanum Myeongjo", "Apple SD Gothic Neo", serif;
             --sans: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
@@ -33,7 +33,7 @@
                 --ink: #f3ecda; --sub: #c3d3e6; --bink: #f1e9d8; --bsub: #a9b3c2;
                 --paper: #1c2c40; --pink: #f1e9d8;
                 --btn-bg: #f3ecda; --btn-fg: #0f1a28; --rule: rgba(243, 236, 218, .3); --line: rgba(241, 233, 216, .16);
-                --tape: rgba(241, 233, 216, .24); --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 18px rgba(0, 0, 0, .4); --ph: #22344a;
+                --tape: rgba(241, 233, 216, .24); --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 18px rgba(0, 0, 0, .4); --ph: #22344a; --err: #ffb4ab;
                 color-scheme: dark;
             }
         }
@@ -42,7 +42,7 @@
             --ink: #f3ecda; --sub: #c3d3e6; --bink: #f1e9d8; --bsub: #a9b3c2;
             --paper: #1c2c40; --pink: #f1e9d8;
             --btn-bg: #f3ecda; --btn-fg: #0f1a28; --rule: rgba(243, 236, 218, .3); --line: rgba(241, 233, 216, .16);
-            --tape: rgba(241, 233, 216, .24); --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 18px rgba(0, 0, 0, .4); --ph: #22344a;
+            --tape: rgba(241, 233, 216, .24); --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 18px rgba(0, 0, 0, .4); --ph: #22344a; --err: #ffb4ab;
             color-scheme: dark;
         }
 
@@ -154,6 +154,33 @@
         .viewer .prev { left: 10px; top: 50%; margin-top: -24px; }
         .viewer .next { right: 10px; top: 50%; margin-top: -24px; }
 
+        /* 편집 도구 */
+        .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; }
+        .btn.sm { min-height: 40px; padding: 0 14px; font-size: .88rem; }
+        .btn.outline { background: transparent; color: var(--ink); border-color: var(--ink); }
+        .btn.danger { background: #b3261e; border-color: #b3261e; color: #fff; }
+        .btn:disabled { opacity: .4; cursor: default; }
+        .status { font-size: .88rem; color: var(--sub); margin: 10px 0 0; min-height: 1.4em; }
+        .status.err { color: var(--err); font-weight: 700; }
+        .confirm { margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: var(--paper); color: var(--pink); display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; box-shadow: var(--shadow); }
+        .confirm p { margin: 0; flex: 1 1 220px; }
+        .confirm .btn.outline { color: var(--pink); border-color: var(--pink); }
+        .tile.editable { cursor: pointer; }
+        .tile.editable.sel { outline: 4px solid #2a78c2; outline-offset: -4px; }
+        .tile.editable.sel img { opacity: .55; }
+        .tile.editable .chk { position: absolute; top: 8px; left: 8px; width: 28px; height: 28px; border-radius: 50%; border: 2px solid #fff; background: rgba(10, 18, 28, .5); color: #fff; display: grid; place-items: center; font-size: .95rem; }
+        .tile.editable.sel .chk { background: #2a78c2; }
+        .tile.editable .idx { position: absolute; top: 8px; right: 8px; background: rgba(10, 18, 28, .7); color: #fff; font-size: .75rem; padding: 1px 9px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+        .tile.editable .play { bottom: 54px; }
+        .tile .mv { position: absolute; bottom: 6px; width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(255, 255, 255, .9); color: #14263d; font-size: 1rem; line-height: 1; cursor: pointer; }
+        .tile .mv.prev { left: 6px; } .tile .mv.next { right: 6px; }
+        .tile .mv:disabled { opacity: .35; cursor: default; }
+        .tile.over { outline: 4px dashed #2a78c2; outline-offset: -4px; }
+        .tile.dragging { opacity: .4; }
+        .viewer .music { top: calc(10px + env(safe-area-inset-top, 0px)); left: 12px; font-size: 1.5rem; }
+        .viewer .music.off { opacity: .6; }
+        .viewer .music.off::after { content: ""; position: absolute; left: 11px; right: 11px; top: 50%; border-top: 3px solid #fff; transform: rotate(-40deg); }
+
         @media (min-width: 720px) {
             .wrap { padding-inline: 32px; }
             .hero { grid-template-columns: 1.15fr .85fr; gap: 56px; padding-block: 20px 4px; }
@@ -193,6 +220,7 @@
     </div>
 
     <div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="사진 크게 보기">
+        <button class="music" id="musicBtn" aria-label="음악 끄기" hidden>♪</button>
         <button class="close" aria-label="닫기">&times;</button>
         <button class="prev" aria-label="이전 사진">&#8249;</button>
         <div class="media" id="viewerMedia"></div>
@@ -202,26 +230,42 @@
 
     <script>
         // 앨범 데이터: 서버(api/albums)에서 읽고, 서버가 없으면 data/albums.json(샘플)을 씁니다.
-        // 샘플 앨범(솔비치)은 서버 앨범 뒤에 함께 보여줍니다.
+        // 샘플 앨범(솔비치)은 서버 앨범 뒤에 함께 보여주며, 편집(삭제·순서)은 서버 앨범만 됩니다.
         const main = document.getElementById("main");
         const head = document.getElementById("head");
         const topEl = document.getElementById("top");
         const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-        let albums = [];
+
+        let albums = [], authed = false, schema = 2;
+        let editing = false, confirmKind = "", statusMsg = "", statusErr = false;
+        const selected = new Set();
 
         async function load(url) {
             try {
-                const res = await fetch(url);
-                if (!res.ok || !(res.headers.get("content-type") || "").includes("json")) return [];
-                return (await res.json()).albums || [];
-            } catch (e) { return []; }
+                const res = await fetch(url, { credentials: "same-origin" });
+                if (!res.ok || !(res.headers.get("content-type") || "").includes("json")) return null;
+                return await res.json();
+            } catch (e) { return null; }
         }
-
-        async function init() {
+        async function api(path, opts) {
+            const res = await fetch(path, { credentials: "same-origin", ...opts });
+            let data = {};
+            try { data = await res.json(); } catch {}
+            if (!res.ok) throw Object.assign(new Error(data.error || "요청에 실패했어요."), { status: res.status });
+            return data;
+        }
+        async function loadAlbums() {
             const [live, sample] = await Promise.all([load("api/albums"), load("data/albums.json")]);
-            const ids = new Set(live.map(a => a.id));
-            albums = [...live, ...sample.filter(a => !ids.has(a.id))];
-            window.addEventListener("hashchange", render);
+            const liveList = live?.albums || [];
+            schema = live?.schema || 2;
+            const ids = new Set(liveList.map(a => a.id));
+            albums = [...liveList, ...(sample?.albums || []).filter(a => !ids.has(a.id)).map(a => ({ ...a, sample: true }))];
+        }
+        async function init() {
+            const me = await load("api/login");
+            authed = !!(me && me.authed);
+            await loadAlbums();
+            window.addEventListener("hashchange", () => { editing = false; confirmKind = ""; statusMsg = ""; selected.clear(); render(); });
             render();
         }
 
@@ -236,12 +280,12 @@
             return [monthLabel(a.created_at), `사진 ${p}`, v ? `영상 ${v}` : ""].filter(Boolean).join(" · ");
         }
 
-        function render() {
+        function currentAlbum() {
             const id = decodeURIComponent(location.hash.replace(/^#\/?/, ""));
-            const album = albums.find(a => a.id === id);
-            album ? renderAlbum(album) : renderHome();
-            window.scrollTo(0, 0);
+            return albums.find(a => a.id === id);
         }
+        function draw() { const a = currentAlbum(); a ? renderAlbum(a) : renderHome(); }
+        function render() { draw(); window.scrollTo(0, 0); }
 
         function polaroid(a) {
             return `<a class="polaroid" href="#/${encodeURIComponent(a.id)}">
@@ -261,7 +305,7 @@
             }
             const all = albums.flatMap(a => a.items);
             const photos = count(all, "photo"), videos = count(all, "video");
-            recent = albums.flatMap(a => a.items.slice(-6).reverse().map(it => ({ ...it, album: a.title }))).slice(0, 12);
+            recent = albums.flatMap(a => a.items.slice(-6).reverse().map(it => ({ ...it, album: a.title, music: a.music }))).slice(0, 12);
 
             head.innerHTML = `
                 <div class="hero">
@@ -291,41 +335,241 @@
                 </section>` : ""}`;
         }
 
+        /* ---------- 앨범 보기 / 편집 ---------- */
         let albumItems = [];
+        const canEdit = a => authed && !a.sample;
+
         function renderAlbum(a) {
             document.title = `${a.title} - 윤서네 가족앨범`;
-            albumItems = a.items;
             topEl.classList.remove("home");
+            const info = [a.description, albumMeta(a), a.music ? `♪ ${a.music.title}` : ""].filter(Boolean).join(" · ");
             head.innerHTML = `
                 <div class="album-head">
                     <a class="back" href="#/">← 전체 앨범</a>
                     <h1>${esc(a.title)}</h1>
-                    <p>${esc([a.description, albumMeta(a)].filter(Boolean).join(" · "))}</p>
+                    <p>${esc(info)}</p>
+                    <div id="toolsWrap"></div>
                 </div>`;
-            main.innerHTML = `
-                <section>
-                    ${a.items.length ? `<div class="photos" id="photos">${a.items.map((it, i) => `
-                        <button class="tile" data-i="${i}" aria-label="${esc(it.title || a.title)} 크게 보기">
-                            <img loading="lazy" src="${esc(it.thumb)}" alt="${esc(it.title)}">
-                            ${it.type === "video" ? `<span class="play">영상</span>` : ""}
-                        </button>`).join("")}</div>`
-                    : `<div class="empty"><span class="hand">비어 있는 앨범이에요</span>'사진·영상 올리기'에서 첫 사진을 올려 보세요.</div>`}
-                </section>`;
+            renderTools(a);
+            main.innerHTML = `<section id="photosWrap"></section>`;
+            renderPhotos(a);
         }
 
+        function renderTools(a) {
+            const wrap = document.getElementById("toolsWrap");
+            if (!wrap) return;
+            if (!canEdit(a)) { wrap.innerHTML = ""; return; }
+            if (!editing) { wrap.innerHTML = `<div class="tools"><button class="btn sm outline" data-act="edit">편집</button></div>`; return; }
+            const n = selected.size;
+            const confirm = confirmKind === "items"
+                ? `<div class="confirm" role="alertdialog"><p><b>${n}개</b>를 영구 삭제할까요? 되돌릴 수 없어요.</p><button class="btn sm danger" data-act="delok">삭제</button><button class="btn sm outline" data-act="cancel">취소</button></div>`
+                : confirmKind === "album"
+                ? `<div class="confirm" role="alertdialog"><p>앨범 '<b>${esc(a.title)}</b>'과 안의 사진·영상 ${a.items.length}개를 모두 삭제할까요? 되돌릴 수 없어요.</p><button class="btn sm danger" data-act="delalbumok">앨범 삭제</button><button class="btn sm outline" data-act="cancel">취소</button></div>`
+                : "";
+            wrap.innerHTML = `
+                <div class="tools">
+                    <button class="btn sm" data-act="done">완료</button>
+                    <button class="btn sm danger" data-act="del" ${n ? "" : "disabled"}>선택 삭제${n ? ` (${n})` : ""}</button>
+                    <button class="btn sm outline" data-act="all" ${a.items.length ? "" : "disabled"}>${n && n === a.items.length ? "선택 해제" : "모두 선택"}</button>
+                    <a class="btn sm outline" href="upload.html?album=${encodeURIComponent(a.id)}#music">음악 바꾸기</a>
+                    <button class="btn sm outline" data-act="delalbum">앨범 삭제</button>
+                </div>
+                <p class="status${statusErr ? " err" : ""}" id="status" role="status">${esc(statusMsg || "사진을 눌러 고르고, ◀ ▶ 버튼이나 끌어서 순서를 바꿔요.")}</p>
+                ${schema < 2 ? `<p class="status err">순서 변경과 음악을 쓰려면 D1 업데이트가 필요해요. (docs/SETUP.md 참고)</p>` : ""}
+                ${confirm}`;
+        }
+
+        function setStatus(msg, err = false) {
+            statusMsg = msg; statusErr = err;
+            const el = document.getElementById("status");
+            if (el) { el.textContent = msg; el.classList.toggle("err", err); }
+        }
+
+        function renderPhotos(a) {
+            const wrap = document.getElementById("photosWrap");
+            const view = editing && canEdit(a);
+            albumItems = a.items.map(it => ({ ...it, music: a.music }));
+            if (!a.items.length) {
+                wrap.innerHTML = `<div class="empty"><span class="hand">비어 있는 앨범이에요</span>'사진·영상 올리기'에서 첫 사진을 올려 보세요.</div>`;
+                return;
+            }
+            wrap.innerHTML = `<div class="photos" id="photos">${a.items.map((it, i) => view
+                ? `<div class="tile editable${selected.has(it.id) ? " sel" : ""}" draggable="true" data-i="${i}" data-id="${esc(it.id)}" role="checkbox" aria-checked="${selected.has(it.id)}" tabindex="0" aria-label="${i + 1}번째 ${it.type === "video" ? "영상" : "사진"} 선택">
+                        <img loading="lazy" src="${esc(it.thumb)}" alt="" draggable="false">
+                        <span class="chk">${selected.has(it.id) ? "✓" : ""}</span><span class="idx">${i + 1}</span>
+                        ${it.type === "video" ? `<span class="play">영상</span>` : ""}
+                        <button class="mv prev" data-mv="-1" aria-label="앞으로 옮기기" ${i === 0 ? "disabled" : ""}>◀</button>
+                        <button class="mv next" data-mv="1" aria-label="뒤로 옮기기" ${i === a.items.length - 1 ? "disabled" : ""}>▶</button>
+                    </div>`
+                : `<button class="tile" data-i="${i}" aria-label="${esc(it.title || a.title)} 크게 보기">
+                        <img loading="lazy" src="${esc(it.thumb)}" alt="${esc(it.title)}">
+                        ${it.type === "video" ? `<span class="play">영상</span>` : ""}
+                    </button>`).join("")}</div>`;
+        }
+
+        /* 순서 변경: 바뀐 뒤 0.5초 기다렸다가 한 번에 저장 */
+        let saveTimer = null, pendingAlbum = null;
+        function scheduleSave(a) {
+            pendingAlbum = a.id;
+            setStatus("순서를 바꿨어요. 저장하는 중…");
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(flushSave, 500);
+        }
+        async function flushSave() {
+            clearTimeout(saveTimer);
+            const id = pendingAlbum;
+            if (!id) return;
+            pendingAlbum = null;
+            const a = albums.find(x => x.id === id);
+            if (!a) return;
+            try {
+                await api(`api/albums/${encodeURIComponent(id)}/order`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids: a.items.map(it => it.id) }) });
+                setStatus("순서를 저장했어요.");
+            } catch (err) { handleError(err, "순서를 저장하지 못했어요. "); }
+        }
+        function handleError(err, prefix = "") {
+            if (err.status === 401) { authed = false; setStatus("로그인이 풀렸어요. '사진·영상 올리기'에서 다시 로그인해 주세요.", true); }
+            else setStatus(prefix + err.message, true);
+        }
+
+        function move(a, from, to, focusDir) {
+            if (to < 0 || to >= a.items.length || from === to) return;
+            const [it] = a.items.splice(from, 1);
+            a.items.splice(to, 0, it);
+            a.cover = a.items[0]?.thumb || "";
+            renderPhotos(a);
+            scheduleSave(a);
+            if (focusDir) {
+                const t = document.querySelector(`.tile[data-id="${CSS.escape(it.id)}"]`);
+                const b = t && (t.querySelector(`.mv[data-mv="${focusDir}"]:not([disabled])`) || t.querySelector(".mv:not([disabled])"));
+                if (b) b.focus();
+            }
+        }
+
+        function toggleSelect(a, tile) {
+            const id = tile.dataset.id;
+            selected.has(id) ? selected.delete(id) : selected.add(id);
+            const on = selected.has(id);
+            tile.classList.toggle("sel", on);
+            tile.setAttribute("aria-checked", on);
+            tile.querySelector(".chk").textContent = on ? "✓" : "";
+            if (confirmKind === "items" && !selected.size) confirmKind = "";
+            renderTools(a);
+        }
+
+        head.addEventListener("click", async e => {
+            const btn = e.target.closest("[data-act]");
+            const a = currentAlbum();
+            if (!btn || !a || !canEdit(a)) return;
+            const act = btn.dataset.act;
+            try {
+                if (act === "edit") { editing = true; selected.clear(); confirmKind = ""; statusMsg = ""; draw(); }
+                else if (act === "done") { await flushSave(); editing = false; confirmKind = ""; selected.clear(); statusMsg = ""; draw(); }
+                else if (act === "all") {
+                    if (selected.size === a.items.length) selected.clear(); else a.items.forEach(it => selected.add(it.id));
+                    confirmKind = ""; renderTools(a); renderPhotos(a);
+                }
+                else if (act === "del") { confirmKind = "items"; renderTools(a); }
+                else if (act === "delalbum") { confirmKind = "album"; renderTools(a); }
+                else if (act === "cancel") { confirmKind = ""; renderTools(a); }
+                else if (act === "delok") {
+                    const ids = [...selected];
+                    setStatus("삭제하는 중…");
+                    await api("api/items/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids }) });
+                    selected.clear(); confirmKind = "";
+                    await loadAlbums();
+                    statusMsg = `${ids.length}개를 삭제했어요.`; statusErr = false;
+                    draw();
+                }
+                else if (act === "delalbumok") {
+                    setStatus("앨범을 삭제하는 중…");
+                    await api(`api/albums/${encodeURIComponent(a.id)}`, { method: "DELETE" });
+                    editing = false; confirmKind = "";
+                    await loadAlbums();
+                    location.hash = "#/";
+                }
+            } catch (err) { confirmKind = ""; renderTools(a); handleError(err, "실패했어요. "); }
+        });
+
+        /* 사진 칸 누르기 */
         main.addEventListener("click", e => {
             const t = e.target.closest(".tile");
             if (!t) return;
+            const a = currentAlbum();
+            if (t.classList.contains("editable")) {
+                const mv = e.target.closest(".mv");
+                if (mv) { if (!mv.disabled) { const i = +t.dataset.i; move(a, i, i + (+mv.dataset.mv), mv.dataset.mv); } return; }
+                toggleSelect(a, t);
+                return;
+            }
             const i = +t.dataset.i;
             if (t.closest("#strip")) openViewer(recent, i, t);
             else openViewer(albumItems, i, t);
         });
+        main.addEventListener("keydown", e => {
+            const t = e.target.closest(".tile.editable");
+            if (t && e.target === t && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggleSelect(currentAlbum(), t); }
+        });
 
-        /* 확대 보기 */
+        /* 끌어서 순서 바꾸기 (컴퓨터). 휴대폰은 ◀ ▶ 버튼을 쓰세요. */
+        let dragId = null;
+        main.addEventListener("dragstart", e => {
+            const t = e.target.closest(".tile.editable");
+            if (!t) return;
+            dragId = t.dataset.id;
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", dragId);
+            t.classList.add("dragging");
+        });
+        main.addEventListener("dragover", e => {
+            const t = e.target.closest(".tile.editable");
+            if (!t || !dragId) return;
+            e.preventDefault();
+            document.querySelectorAll(".tile.over").forEach(x => x.classList.remove("over"));
+            t.classList.add("over");
+        });
+        main.addEventListener("drop", e => {
+            const t = e.target.closest(".tile.editable");
+            if (!t || !dragId) return;
+            e.preventDefault();
+            const a = currentAlbum();
+            const from = a.items.findIndex(it => it.id === dragId);
+            move(a, from, +t.dataset.i);
+            dragId = null;
+        });
+        main.addEventListener("dragend", () => {
+            dragId = null;
+            document.querySelectorAll(".tile.over, .tile.dragging").forEach(x => x.classList.remove("over", "dragging"));
+        });
+
+        /* ---------- 확대 보기 + 앨범 음악 ---------- */
         const viewer = document.getElementById("viewer");
         const media = document.getElementById("viewerMedia");
         const cap = document.getElementById("viewerCap");
+        const musicBtn = document.getElementById("musicBtn");
         let list = [], cur = 0, opener = null;
+
+        // 음악은 사진을 누르는 순간(사용자가 직접 조작한 순간)에 시작해야 휴대폰에서도 소리가 납니다.
+        const audio = new Audio();
+        audio.loop = true; audio.volume = 0.55; audio.preload = "none";
+        let musicOn = true;
+        try { musicOn = localStorage.getItem("fa_music") !== "0"; } catch (e) {}
+
+        function syncMusic(it) {
+            const track = it.music || null;
+            musicBtn.hidden = !track;
+            musicBtn.classList.toggle("off", !musicOn);
+            musicBtn.setAttribute("aria-label", musicOn ? "음악 끄기" : "음악 켜기");
+            if (!track || !musicOn || it.type === "video") { audio.pause(); return track; }
+            if (audio.getAttribute("data-src") !== track.src) { audio.src = track.src; audio.setAttribute("data-src", track.src); }
+            audio.play().catch(() => {});
+            return track;
+        }
+        musicBtn.onclick = () => {
+            musicOn = !musicOn;
+            try { localStorage.setItem("fa_music", musicOn ? "1" : "0"); } catch (e) {}
+            show(cur);
+        };
 
         function show(i) {
             cur = (i + list.length) % list.length;
@@ -333,7 +577,9 @@
             media.innerHTML = it.type === "video"
                 ? `<video src="${esc(it.src)}" poster="${esc(it.thumb)}" controls autoplay playsinline></video>`
                 : `<img src="${esc(it.src)}" alt="${esc(it.title)}">`;
-            cap.innerHTML = `${it.title ? esc(it.title) : ""}<small>${it.album ? esc(it.album) + " · " : ""}${cur + 1} / ${list.length}</small>`;
+            const track = syncMusic(it);
+            const note = track && musicOn && it.type !== "video" ? `♪ ${esc(track.title)} · ` : "";
+            cap.innerHTML = `${it.title ? esc(it.title) : ""}<small>${note}${it.album ? esc(it.album) + " · " : ""}${cur + 1} / ${list.length}</small>`;
         }
         function openViewer(items, i, from) {
             list = items; opener = from;
@@ -344,6 +590,8 @@
         }
         function closeViewer() {
             media.innerHTML = "";
+            audio.pause();
+            try { audio.currentTime = 0; } catch (e) {}
             viewer.classList.remove("open");
             document.documentElement.classList.remove("lock");
             if (opener && document.contains(opener)) opener.focus();

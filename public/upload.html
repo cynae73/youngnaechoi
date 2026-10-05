@@ -85,6 +85,33 @@
                 <ul class="queue" id="queue"></ul>
             </section>
 
+            <section id="music">
+                <h2>3. 앨범 음악 <span class="hint" style="font-weight:400">(선택)</span></h2>
+                <p class="hint">위 1번에서 고른 앨범의 사진을 크게 볼 때 이 음악이 흘러나와요. 앨범마다 다른 곡을 쓸 수 있습니다.</p>
+                <p class="msg" id="musicNow" aria-live="polite"></p>
+                <label for="musicFile">음악 파일 (mp3, m4a, ogg, wav · 15MB 이하)
+                    <input id="musicFile" type="file" accept="audio/*,.mp3,.m4a,.aac,.ogg,.wav">
+                </label>
+                <label for="musicTitle">곡 이름 (비워 두면 파일 이름을 써요)
+                    <input id="musicTitle" type="text" maxlength="80" placeholder="예: 봄날의 산책">
+                </label>
+                <div class="row">
+                    <button id="musicSave" type="button" disabled>음악 등록</button>
+                    <button class="ghost" id="musicDel" type="button" disabled>음악 삭제</button>
+                </div>
+                <p class="msg" id="musicMsg" role="status"></p>
+                <details>
+                    <summary>저작권 걱정 없는 음원은 어디서 구하나요?</summary>
+                    <ul class="hint" style="margin:8px 0 0;padding-left:1.2em">
+                        <li><a href="https://gongu.copyright.or.kr" target="_blank" rel="noopener">공유마당</a> (한국저작권위원회): 공유 저작물과 무료 음원</li>
+                        <li><a href="https://pixabay.com/music/" target="_blank" rel="noopener">Pixabay 음악</a>: 무료로 내려받는 음원</li>
+                        <li>YouTube 스튜디오의 '오디오 보관함': 무료 음원</li>
+                        <li>곡마다 이용 조건이 달라요. 내려받을 때 라이선스를 꼭 확인하고, 출처 표기가 필요한 곡은 곡 이름에 함께 적어 주세요.</li>
+                        <li>가수가 부른 대중가요나 영화 음악은 저작권이 있어서 올리면 안 돼요. 이 사이트는 링크만 있으면 누구나 볼 수 있습니다.</li>
+                    </ul>
+                </details>
+            </section>
+
             <p class="hint" style="text-align:center"><button class="ghost" id="logout" type="button">로그아웃</button></p>
         </div>
     </main>
@@ -106,19 +133,63 @@
         function showLogin() { $("loginBox").hidden = false; $("uploader").hidden = true; $("pw").focus(); }
         async function showUploader() {
             $("loginBox").hidden = true; $("uploader").hidden = false;
-            await loadAlbums();
+            await loadAlbums(new URLSearchParams(location.search).get("album") || undefined);
+            if (location.hash === "#music") $("music").scrollIntoView();
         }
 
         async function loadAlbums(selectId) {
             try {
                 const { albums } = await api("api/albums");
+                albumsData = albums;
                 $("album").innerHTML = albums.length
                     ? albums.map(a => `<option value="${a.id}">${a.title.replace(/[<&]/g, "")}</option>`).join("")
                     : `<option value="">앨범이 없어요. 아래에서 먼저 만들어 주세요.</option>`;
                 if (selectId) $("album").value = selectId;
             } catch (e) { $("albumMsg").textContent = e.message; $("albumMsg").className = "msg err"; }
             updateStart();
+            updateMusic();
         }
+
+        let albumsData = [];
+        function updateMusic() {
+            const a = albumsData.find(x => x.id === $("album").value);
+            $("musicNow").textContent = !a ? "" : a.music ? `지금 이 앨범의 음악: ♪ ${a.music.title}` : "이 앨범에는 아직 음악이 없어요.";
+            $("musicDel").disabled = !(a && a.music);
+            $("musicSave").disabled = !(a && $("musicFile").files.length);
+        }
+        function musicMsg(text, err = false) { $("musicMsg").textContent = text; $("musicMsg").className = "msg" + (err ? " err" : ""); }
+        $("musicFile").addEventListener("change", () => { musicMsg(""); updateMusic(); });
+        $("musicSave").addEventListener("click", async () => {
+            const a = albumsData.find(x => x.id === $("album").value);
+            const f = $("musicFile").files[0];
+            if (!a || !f) return;
+            if (f.size > 15 * 1024 * 1024) return musicMsg("음악 파일이 너무 커요. (최대 15MB)", true);
+            const fd = new FormData();
+            fd.append("file", f);
+            fd.append("title", $("musicTitle").value.trim());
+            $("musicSave").disabled = true; musicMsg("올리는 중…");
+            try {
+                await api(`api/albums/${encodeURIComponent(a.id)}/music`, { method: "PUT", body: fd });
+                $("musicFile").value = ""; $("musicTitle").value = "";
+                await loadAlbums(a.id);
+                musicMsg("음악을 등록했어요.");
+            } catch (err) {
+                if (err.status === 401) return showLogin();
+                musicMsg(err.message, true); updateMusic();
+            }
+        });
+        $("musicDel").addEventListener("click", async () => {
+            const a = albumsData.find(x => x.id === $("album").value);
+            if (!a) return;
+            try {
+                await api(`api/albums/${encodeURIComponent(a.id)}/music`, { method: "DELETE" });
+                await loadAlbums(a.id);
+                musicMsg("음악을 삭제했어요.");
+            } catch (err) {
+                if (err.status === 401) return showLogin();
+                musicMsg(err.message, true);
+            }
+        });
 
         function updateStart() { $("start").disabled = !queue.length || !$("album").value; }
 
@@ -147,7 +218,7 @@
             }
         });
 
-        $("album").addEventListener("change", updateStart);
+        $("album").addEventListener("change", () => { updateStart(); updateMusic(); musicMsg(""); });
 
         $("files").addEventListener("change", () => {
             queue = [...$("files").files].map(file => ({ file, li: null }));
