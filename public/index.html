@@ -9,15 +9,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        /* 컨셉: 크림색 종이 위에 네이비 잉크. 앨범은 테이프로 붙인 폴라로이드, 손글씨 캡션. */
+        /* 컨셉: 하늘색 띠 위에 네이비 잉크, 물결 아래는 아이보리 종이. 앨범은 경계에 걸쳐 붙인 폴라로이드. */
         :root {
-            --bg: #f6f0e4;
-            --paper: #fffdf8;
-            --ink: #14263d;
-            --muted: #566275;
-            --line: rgba(20, 38, 61, .14);
-            --tape: rgba(206, 178, 130, .6);
-            --shadow: 0 1px 2px rgba(20, 38, 61, .12), 0 8px 20px rgba(20, 38, 61, .1);
+            --t1: #c4ddf2; --t2: #5f98c9;
+            --ivory: #f9f2df;
+            --ink: #0b1f35; --sub: #17395d;       /* 위쪽(하늘색 띠) 글씨 */
+            --bink: #14263d; --bsub: #566275;     /* 아래쪽(아이보리) 글씨 */
+            --paper: #fffdf8; --pink: #14263d;    /* 폴라로이드 */
+            --btn-bg: #0b1f35; --btn-fg: #f9f2df;
+            --rule: rgba(11, 31, 53, .35);
+            --line: rgba(20, 38, 61, .16);
+            --tape: rgba(206, 178, 130, .65);
+            --shadow: 0 1px 2px rgba(20, 38, 61, .14), 0 8px 18px rgba(20, 38, 61, .16);
             --ph: #e6dcc8;
             --overlay: rgba(10, 18, 28, .95);
             --serif: "Noto Serif KR", "Nanum Myeongjo", "Apple SD Gothic Neo", serif;
@@ -26,14 +29,20 @@
         }
         @media (prefers-color-scheme: dark) {
             :root:not([data-theme="light"]) {
-                --bg: #0f1a28; --paper: #1a2a3d; --ink: #f1e9d8; --muted: #a9b3c2; --line: rgba(241, 233, 216, .16);
-                --tape: rgba(241, 233, 216, .22); --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 20px rgba(0, 0, 0, .35); --ph: #22344a;
+                --t1: #274a73; --t2: #12304f; --ivory: #0f1a28;
+                --ink: #f3ecda; --sub: #c3d3e6; --bink: #f1e9d8; --bsub: #a9b3c2;
+                --paper: #1c2c40; --pink: #f1e9d8;
+                --btn-bg: #f3ecda; --btn-fg: #0f1a28; --rule: rgba(243, 236, 218, .3); --line: rgba(241, 233, 216, .16);
+                --tape: rgba(241, 233, 216, .24); --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 18px rgba(0, 0, 0, .4); --ph: #22344a;
                 color-scheme: dark;
             }
         }
         :root[data-theme="dark"] {
-            --bg: #0f1a28; --paper: #1a2a3d; --ink: #f1e9d8; --muted: #a9b3c2; --line: rgba(241, 233, 216, .16);
-            --tape: rgba(241, 233, 216, .22); --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 20px rgba(0, 0, 0, .35); --ph: #22344a;
+            --t1: #274a73; --t2: #12304f; --ivory: #0f1a28;
+            --ink: #f3ecda; --sub: #c3d3e6; --bink: #f1e9d8; --bsub: #a9b3c2;
+            --paper: #1c2c40; --pink: #f1e9d8;
+            --btn-bg: #f3ecda; --btn-fg: #0f1a28; --rule: rgba(243, 236, 218, .3); --line: rgba(241, 233, 216, .16);
+            --tape: rgba(241, 233, 216, .24); --shadow: 0 1px 2px rgba(0, 0, 0, .5), 0 8px 18px rgba(0, 0, 0, .4); --ph: #22344a;
             color-scheme: dark;
         }
 
@@ -41,51 +50,70 @@
         [hidden] { display: none !important; }
         html { scroll-behavior: smooth; }
         html.lock { overflow: hidden; }
-        body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--ink); font: 400 1rem/1.7 var(--sans); overflow-x: hidden; }
+        body { margin: 0; min-height: 100vh; background: var(--ivory); color: var(--bink); font: 400 1rem/1.7 var(--sans); overflow-x: hidden; }
         a { color: inherit; }
         button { font: inherit; color: inherit; }
-        :focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; border-radius: 4px; }
+        :focus-visible { outline: 3px solid currentColor; outline-offset: 3px; border-radius: 4px; }
         img { max-width: 100%; }
 
         .wrap { width: 100%; max-width: 1080px; margin-inline: auto; padding-inline: 20px; }
 
-        /* 상단 바 */
-        .topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 18px; }
-        .brand { font-family: var(--serif); font-weight: 600; text-decoration: none; letter-spacing: .02em; }
-        .btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border: 1px solid var(--ink); border-radius: 999px;
-               text-decoration: none; font-weight: 500; background: transparent; cursor: pointer; transition: background .2s, color .2s; }
-        .btn:hover { background: var(--ink); color: var(--bg); }
+        /* 위쪽: 하늘색 띠 */
+        .top { background: linear-gradient(180deg, var(--t1), var(--t2)); color: var(--ink); padding-bottom: 28px; }
+        .top.home { padding-bottom: 70px; }
+        .topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-block: 16px; }
+        .topbar .btn { padding: 0 14px; }
+        .brand { font-family: var(--hand); font-size: clamp(1.7rem, 7.4vw, 2.15rem); line-height: 1; text-decoration: none; color: var(--ink); white-space: nowrap; }
+        .brand::after { content: ""; display: block; height: 7px; margin-top: 3px; opacity: .7;
+            background: radial-gradient(circle at 4px 3px, transparent 3px, currentColor 3.5px, currentColor 4.5px, transparent 5px) 0 0 / 12px 7px repeat-x; }
+        .btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border: 1.5px solid var(--btn-bg); border-radius: 999px; text-decoration: none;
+               font-weight: 500; font-size: .92rem; background: var(--btn-bg); color: var(--btn-fg); cursor: pointer; transition: opacity .2s; white-space: nowrap; }
+        .btn:hover { opacity: .85; }
+        .btn.ghost { background: transparent; color: var(--bink); border-color: var(--bink); }
+
+        /* 물결 */
+        .wave { display: block; line-height: 0; background: var(--ivory); }
+        .wave svg { display: block; width: 100%; height: 38px; }
+        .wave .a { fill: var(--t2); }
+        .wave .b { fill: var(--ivory); }
 
         /* 소개 */
-        .hero { display: grid; grid-template-columns: 1fr; gap: 28px; padding-block: 28px 12px; align-items: center; }
-        .eyebrow { font-family: var(--hand); font-size: 1.5rem; color: var(--muted); margin: 0; line-height: 1.2; }
-        .hero h1 { font-family: var(--serif); font-weight: 700; font-size: clamp(2.1rem, 7vw, 3.6rem); line-height: 1.2; margin: 6px 0 14px; text-wrap: balance; }
-        .hero p.lead { margin: 0 0 18px; color: var(--muted); max-width: 30em; }
-        .stats { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; padding: 14px 0 0; list-style: none; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
-        .stats li { color: var(--muted); font-size: .95rem; }
+        .hero { display: grid; grid-template-columns: 1fr; gap: 24px; padding-block: 8px 4px; align-items: center; }
+        .eyebrow { font-family: var(--hand); font-size: 1.9rem; color: var(--sub); margin: 0; line-height: 1.15; }
+        .hero h1 { font-family: var(--serif); font-weight: 700; font-size: clamp(2rem, 7vw, 3.4rem); line-height: 1.22; margin: 4px 0 12px; text-wrap: balance; }
+        .hero p.lead { margin: 0 0 16px; color: var(--sub); max-width: 30em; }
+        .stats { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; padding: 12px 0 0; list-style: none; border-top: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
+        .stats li { color: var(--sub); font-size: .95rem; }
         .stats b { color: var(--ink); font-family: var(--serif); font-size: 1.25rem; margin-right: 2px; }
         .hero-photo { display: none; }
 
+        .sec-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 18px; }
+        .sec-title h2 { font-family: var(--serif); font-size: 1.3rem; margin: 0; }
+        .sec-title span { color: var(--bsub); font-size: .9rem; }
+        .top .sec-title { margin: 26px 0 0; }
+        .top .sec-title span { color: var(--sub); }
+
         /* 폴라로이드 */
-        .polaroid { position: relative; display: block; background: var(--paper); padding: 10px 10px 8px; border-radius: 3px; box-shadow: var(--shadow);
+        .polaroid { position: relative; display: block; background: var(--paper); color: var(--pink); padding: 10px 10px 8px; border-radius: 3px; box-shadow: var(--shadow);
                     text-decoration: none; transition: transform .25s ease, box-shadow .25s ease; }
-        .polaroid::before { content: ""; position: absolute; top: -11px; left: 50%; width: 76px; height: 22px; margin-left: -38px; background: var(--tape); transform: rotate(-2deg); }
+        .polaroid::before { content: ""; position: absolute; top: -11px; left: 50%; width: 70px; height: 22px; margin-left: -35px; background: var(--tape); transform: rotate(-2deg); }
         .polaroid .frame { display: block; aspect-ratio: 1 / 1; background: var(--ph); overflow: hidden; }
         .polaroid img { display: block; width: 100%; height: 100%; object-fit: cover; }
         .polaroid .cap { display: block; padding: 10px 4px 4px; }
         .polaroid .name { display: block; font-family: var(--hand); font-size: 1.45rem; line-height: 1.15; overflow-wrap: anywhere; }
-        .polaroid .meta { display: block; font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+        .polaroid .meta { display: block; font-size: .85rem; color: var(--bsub); font-variant-numeric: tabular-nums; }
+        .hero-photo .polaroid { max-width: 250px; }
 
-        /* 섹션 */
-        section { padding-block: 28px; }
-        .sec-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 18px; }
-        .sec-title h2 { font-family: var(--serif); font-size: 1.35rem; margin: 0; }
-        .sec-title span { color: var(--muted); font-size: .9rem; }
+        section { padding-block: 24px; }
+        .bottom { background: var(--ivory); }
+        .bottom .wrap { padding-bottom: 8px; }
 
-        .albums { display: grid; gap: 30px 18px; align-items: start; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); padding-block: 14px 6px; }
+        /* 앨범 목록: 위쪽 띠와 물결에 걸치게 올림 */
+        .albums { display: grid; gap: 30px 18px; align-items: start; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
+                  transform: translateY(-58px); margin-bottom: -58px; position: relative; z-index: 2; }
         .albums .polaroid:nth-child(odd) { transform: rotate(-1deg); }
         .albums .polaroid:nth-child(even) { transform: rotate(1.1deg); }
-        .albums .polaroid:hover, .albums .polaroid:focus-visible { transform: rotate(0) translateY(-6px); box-shadow: 0 2px 4px rgba(20, 38, 61, .14), 0 16px 30px rgba(20, 38, 61, .16); }
+        .albums .polaroid:hover, .albums .polaroid:focus-visible { transform: rotate(0) translateY(-6px); box-shadow: 0 2px 4px rgba(20, 38, 61, .16), 0 16px 30px rgba(20, 38, 61, .2); }
 
         /* 최근 사진 줄 */
         .strip { display: flex; gap: 12px; overflow-x: auto; padding: 4px 20px 14px; margin-inline: -20px; scroll-snap-type: x proximity; scroll-padding-inline: 20px; -webkit-overflow-scrolling: touch; }
@@ -95,23 +123,21 @@
         .tile { position: relative; display: block; padding: 0; border: 0; background: var(--ph); border-radius: 4px; overflow: hidden; cursor: pointer; aspect-ratio: 1 / 1; }
         .tile img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }
         .tile:hover img { transform: scale(1.04); }
-        .tile .play { position: absolute; right: 8px; bottom: 8px; display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border-radius: 999px;
-                      background: rgba(10, 18, 28, .72); color: #fff; font-size: .8rem; }
+        .tile .play { position: absolute; right: 8px; bottom: 8px; display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 8px; border-radius: 999px; background: rgba(10, 18, 28, .72); color: #fff; font-size: .8rem; }
         .tile .play::before { content: ""; border-style: solid; border-width: 5px 0 5px 8px; border-color: transparent transparent transparent #fff; }
         .photos { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); }
         .photos .tile { aspect-ratio: 4 / 3; }
 
         /* 앨범 상세 머리 */
-        .album-head { padding-block: 10px 6px; }
-        .back { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; color: var(--muted); }
+        .back { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; color: var(--sub); }
         .back:hover { color: var(--ink); }
         .album-head h1 { font-family: var(--serif); font-size: clamp(1.8rem, 5.5vw, 2.6rem); margin: 0 0 6px; line-height: 1.25; text-wrap: balance; }
-        .album-head p { margin: 0; color: var(--muted); }
+        .album-head p { margin: 0; color: var(--sub); }
 
-        .empty { text-align: center; padding: 56px 16px; color: var(--muted); }
-        .empty .hand { font-family: var(--hand); font-size: 2rem; color: var(--ink); display: block; margin-bottom: 6px; }
+        .empty { text-align: center; padding: 40px 16px; color: var(--bsub); }
+        .empty .hand { font-family: var(--hand); font-size: 2rem; color: var(--bink); display: block; margin-bottom: 6px; }
 
-        footer { margin-top: 24px; border-top: 1px solid var(--line); padding-block: 26px 40px; text-align: center; color: var(--muted); font-size: .9rem; }
+        footer { margin-top: 12px; border-top: 1px solid var(--line); padding-block: 26px 40px; text-align: center; color: var(--bsub); font-size: .9rem; }
         footer p { margin: 10px 0 0; }
 
         /* 확대 보기 */
@@ -130,12 +156,12 @@
 
         @media (min-width: 720px) {
             .wrap { padding-inline: 32px; }
-            .hero { grid-template-columns: 1.15fr .85fr; gap: 56px; padding-block: 48px 20px; }
-            .hero-photo { display: block; max-width: 300px; justify-self: center; transform: rotate(2.2deg); }
+            .hero { grid-template-columns: 1.15fr .85fr; gap: 56px; padding-block: 20px 4px; }
+            .hero-photo { display: block; justify-self: center; width: 100%; max-width: 270px; transform: rotate(2.2deg); }
             .strip { padding-inline: 32px; margin-inline: -32px; scroll-padding-inline: 32px; }
+            .strip .tile { width: 160px; }
             .albums { gap: 36px 24px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); }
             .polaroid .name { font-size: 1.7rem; }
-            .strip .tile { width: 160px; }
         }
         @media (prefers-reduced-motion: reduce) {
             html { scroll-behavior: auto; }
@@ -146,18 +172,24 @@
 </head>
 
 <body>
-    <div class="wrap">
-        <header class="topbar">
-            <a class="brand" href="#/">윤서네 가족앨범</a>
-            <a class="btn" href="upload.html">사진·영상 올리기</a>
-        </header>
-
-        <main id="main"></main>
-
-        <footer>
-            <a class="btn" href="upload.html">사진·영상 올리기</a>
-            <p>사진을 누르면 크게 볼 수 있어요. 키보드 ← → 와 스와이프로 넘겨 보세요.</p>
-        </footer>
+    <div class="top" id="top">
+        <div class="wrap">
+            <header class="topbar">
+                <a class="brand" href="#/">윤서네 가족앨범</a>
+                <a class="btn" href="upload.html">사진·영상 올리기</a>
+            </header>
+            <div id="head"></div>
+        </div>
+    </div>
+    <div class="wave" aria-hidden="true"><svg viewBox="0 0 1200 40" preserveAspectRatio="none"><path class="a" d="M0 0 H1200 V14 C1050 40 950 -4 800 16 C650 36 550 -2 400 16 C250 34 120 4 0 22 Z"/><path class="b" d="M0 22 C120 4 250 34 400 16 C550 -2 650 36 800 16 C950 -4 1050 40 1200 14 V40 H0 Z"/></svg></div>
+    <div class="bottom">
+        <div class="wrap">
+            <main id="main"></main>
+            <footer>
+                <a class="btn ghost" href="upload.html">사진·영상 올리기</a>
+                <p>사진을 누르면 크게 볼 수 있어요. 키보드 ← → 와 스와이프로 넘겨 보세요.</p>
+            </footer>
+        </div>
     </div>
 
     <div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="사진 크게 보기">
@@ -172,6 +204,8 @@
         // 앨범 데이터: 서버(api/albums)에서 읽고, 서버가 없으면 data/albums.json(샘플)을 씁니다.
         // 샘플 앨범(솔비치)은 서버 앨범 뒤에 함께 보여줍니다.
         const main = document.getElementById("main");
+        const head = document.getElementById("head");
+        const topEl = document.getElementById("top");
         const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
         let albums = [];
 
@@ -219,16 +253,17 @@
         let recent = [];
         function renderHome() {
             document.title = "윤서네 가족앨범";
+            topEl.classList.add("home");
             if (!albums.length) {
+                head.innerHTML = `<div class="hero"><div><p class="eyebrow">우리 가족의 시간</p><h1>함께한 순간을<br>차곡차곡 모아요</h1></div></div>`;
                 main.innerHTML = `<div class="empty"><span class="hand">아직 앨범이 없어요</span>오른쪽 위 '사진·영상 올리기'에서 첫 앨범을 만들어 보세요.</div>`;
                 return;
             }
             const all = albums.flatMap(a => a.items);
             const photos = count(all, "photo"), videos = count(all, "video");
-            const first = albums[0];
             recent = albums.flatMap(a => a.items.slice(-6).reverse().map(it => ({ ...it, album: a.title }))).slice(0, 12);
 
-            main.innerHTML = `
+            head.innerHTML = `
                 <div class="hero">
                     <div>
                         <p class="eyebrow">우리 가족의 시간</p>
@@ -240,14 +275,12 @@
                             <li><b>${videos.toLocaleString("ko-KR")}</b>영상</li>
                         </ul>
                     </div>
-                    <div class="hero-photo">${polaroid(first)}</div>
+                    <div class="hero-photo">${polaroid(albums[0])}</div>
                 </div>
+                <div class="sec-title"><h2>앨범</h2><span>${albums.length}개</span></div>`;
 
-                <section aria-labelledby="albumsTitle">
-                    <div class="sec-title"><h2 id="albumsTitle">앨범</h2><span>${albums.length}개</span></div>
-                    <div class="albums">${albums.map(polaroid).join("")}</div>
-                </section>
-
+            main.innerHTML = `
+                <div class="albums">${albums.map(polaroid).join("")}</div>
                 ${recent.length ? `<section aria-labelledby="recentTitle">
                     <div class="sec-title"><h2 id="recentTitle">최근 올라온 사진</h2><span>옆으로 넘겨 보세요</span></div>
                     <div class="strip" id="strip">${recent.map((it, i) => `
@@ -262,12 +295,14 @@
         function renderAlbum(a) {
             document.title = `${a.title} - 윤서네 가족앨범`;
             albumItems = a.items;
-            main.innerHTML = `
+            topEl.classList.remove("home");
+            head.innerHTML = `
                 <div class="album-head">
                     <a class="back" href="#/">← 전체 앨범</a>
                     <h1>${esc(a.title)}</h1>
                     <p>${esc([a.description, albumMeta(a)].filter(Boolean).join(" · "))}</p>
-                </div>
+                </div>`;
+            main.innerHTML = `
                 <section>
                     ${a.items.length ? `<div class="photos" id="photos">${a.items.map((it, i) => `
                         <button class="tile" data-i="${i}" aria-label="${esc(it.title || a.title)} 크게 보기">
