@@ -34,7 +34,11 @@ async function api(path, body) {
   const res = await fetch(path, body === undefined ? {} : { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   let data = null;
   try { data = await res.json(); } catch { /* 본문 없음 */ }
-  if (!res.ok) { const e = new Error((data && data.error) || `요청 실패 (HTTP ${res.status})`); e.status = res.status; e.code = data && data.code; throw e; }
+  if (!res.ok) {
+    const e = new Error((data && data.error) || `요청 실패 (HTTP ${res.status})`); e.status = res.status; e.code = data && data.code;
+    if (e.code === 'ACCESS' && path !== '/api/access') openAccess();
+    throw e;
+  }
   return data;
 }
 let toastT = null;
@@ -85,7 +89,27 @@ function renderChips() {
   n.hidden = S.state.hasKey;
   n.textContent = '이 PC에는 AI 키가 없습니다. docx · hwpx · 글자가 있는 PDF는 바로 읽을 수 있고, 사진·스캔은 "Claude 앱으로 변환"을 이용하세요. (AI 키를 쓰려면 폴더의 .env 에 ANTHROPIC_API_KEY 를 넣고 다시 실행)';
 }
-async function refreshState() { S.state = await api('/api/state'); renderChips(); }
+async function refreshState() {
+  S.state = await api('/api/state'); renderChips();
+  $('#btnSignout').hidden = !S.state.shared;
+  $('#loginNote').textContent = S.state.shared
+    ? '사번으로 연결합니다. 사번은 서버 메모리에만 두고, 접속을 종료하거나 오래 쓰지 않으면 사라집니다. 접수자는 이 사번으로 기록되며, 접속 기록(사번, 시각, IP)이 서버에 남습니다.'
+    : '사번으로 연결합니다. 비밀번호는 없습니다. 사번은 이 PC의 메모리에만 두고 창을 닫으면 사라집니다. 접수자는 이 사번으로 기록됩니다.';
+  if (S.state.accessRequired && !S.state.accessOk) openAccess();
+}
+function openAccess() { const d = $('#dlgAccess'); if (d.open) return; $('#accessErr').textContent = ''; d.showModal(); setTimeout(() => $('#inPw').focus(), 30); }
+async function doAccess(e) {
+  e.preventDefault();
+  const btn = $('#accessGo'); btn.disabled = true; $('#accessErr').textContent = '';
+  try { await api('/api/access', { password: $('#inPw').value }); $('#inPw').value = ''; $('#dlgAccess').close(); await refreshState(); toast('접속했습니다.'); }
+  catch (er) { $('#accessErr').textContent = er.message; }
+  btn.disabled = false;
+}
+async function signout() {
+  if (S.orders.length && !window.confirm('접속을 종료하면 불러온 내용이 사라집니다. 엑셀로 저장하셨나요? 종료할까요?')) return;
+  try { await api('/api/signout', {}); } catch { /* 이미 끊긴 경우 */ }
+  window.onbeforeunload = null; window.removeEventListener('beforeunload', beforeUnload); location.reload();
+}
 
 /* ── 파일 준비 (브라우저에서 줄여 보낸다) ──────────── */
 const b64 = (buf) => { let s = ''; const u = new Uint8Array(buf); for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); };
@@ -643,6 +667,7 @@ async function exportXlsx() {
 }
 
 /* ── 연결선 ──────────────────────────────────────── */
+function beforeUnload(e) { if (S.orders.length) { e.preventDefault(); e.returnValue = ''; } }
 function wire() {
   $$('.step').forEach((b) => b.addEventListener('click', () => go(b.dataset.stage)));
   $('#btnFiles').onclick = () => $('#inFiles').click();
@@ -664,6 +689,9 @@ function wire() {
   $('#btnDry').onclick = runDry;
   $('#chipConn').onclick = () => (S.state.user ? showConnected() : openLogin());
   $('#formLogin').addEventListener('submit', doLogin);
+  $('#formAccess').addEventListener('submit', doAccess);
+  $('#dlgAccess').addEventListener('cancel', (e) => e.preventDefault());
+  $('#btnSignout').onclick = signout;
   $('#loginCancel').onclick = () => $('#dlgLogin').close();
   $('#infoClose').onclick = () => $('#dlgInfo').close();
   $('#list').addEventListener('keydown', (e) => {
@@ -672,9 +700,9 @@ function wire() {
     if (n) { e.preventDefault(); select(n.id); }
   });
   $('#list').tabIndex = 0;
-  window.addEventListener('beforeunload', (e) => { if (S.orders.length) { e.preventDefault(); e.returnValue = ''; } });
+  window.addEventListener('beforeunload', beforeUnload);
 }
 
 wire();
-refreshState().catch(() => toast('프로그램 본체와 연결되지 않았습니다. 검은 창이 열려 있는지 확인하세요.', true)).finally(() => go('load'));
+refreshState().catch(() => toast('프로그램 본체와 연결되지 않았습니다. 내 PC에서 쓰는 경우 검은 창이 열려 있는지, 서버를 쓰는 경우 접속 주소가 맞는지 확인하세요.', true)).finally(() => go('load'));
 })();

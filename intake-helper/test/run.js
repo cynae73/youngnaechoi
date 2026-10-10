@@ -168,7 +168,118 @@ function checkStandard(out) {
       const res = await fetch(base + '/api/template', { headers: { Origin: 'http://evil.example' } });
       assert.strictEqual(res.status, 403);
     });
+
+  await t('사용 안내서(guide.html)는 열린다(내 PC 모드)', async () => {
+    const g = await fetch(`http://127.0.0.1:${PORT}/guide.html`);
+    assert.strictEqual(g.status, 200); assert.ok((await g.text()).includes('접수 도우미 사용 안내'));
+  });
   } finally { srv.kill(); }
+
+
+  console.log('공유 서버 모드');
+  const http = require('http');
+  const cp = require('child_process');
+  const os = require('os');
+  const LOG = fs.mkdtempSync(path.join(os.tmpdir(), 'intake-log-'));
+  const start = async (port, env) => {
+    const p = spawn(process.execPath, [path.join(__dirname, '..', 'src', 'server.js')], { env: { ...process.env, ANTHROPIC_API_KEY: '', KAFRI_DEMO: '1', LOG_DIR: LOG, ...env, PORT: String(port) }, stdio: 'ignore' });
+    for (let i = 0; i < 40; i++) { try { await fetch(`http://127.0.0.1:${port}/healthz`); return p; } catch { await new Promise((r) => setTimeout(r, 150)); } }
+    return p;
+  };
+  const call = (port, method, p, { host, cookie, body, origin } = {}) => new Promise((resolve, reject) => {
+    const data = body === undefined ? null : Buffer.from(JSON.stringify(body));
+    const h = { Host: host || 'intake.test', ...(cookie ? { Cookie: cookie } : {}), ...(origin ? { Origin: origin } : {}), ...(data ? { 'Content-Type': 'application/json', 'Content-Length': data.length } : {}) };
+    const r = http.request({ host: '127.0.0.1', port, method, path: p, headers: h }, (res) => {
+      const cs = []; res.on('data', (c) => cs.push(c));
+      res.on('end', () => { let j = null; try { j = JSON.parse(Buffer.concat(cs).toString()); } catch { /* 본문 없음 */ } resolve({ status: res.statusCode, json: j, cookie: (res.headers['set-cookie'] || []).map((c) => c.split(';')[0]).join('; '), headers: res.headers }); });
+    });
+    r.on('error', reject); if (data) r.write(data); r.end();
+  });
+  const SP = 18793;
+  const docx = fs.readFileSync(path.join(FX, '표준양식.docx')).toString('base64');
+  const PW = 'test-password-1234';
+
+  await t('공유 주소로 열면서 접속 비밀번호가 없으면 시작하지 않는다', async () => {
+    const r = cp.spawnSync(process.execPath, [path.join(__dirname, '..', 'src', 'server.js')], { env: { ...process.env, HOST: '0.0.0.0', PORT: '18794', ACCESS_PASSWORD: '', PUBLIC_URL: 'http://intake.test', LOG_DIR: LOG }, encoding: 'utf8', timeout: 8000 });
+    assert.strictEqual(r.status, 1); assert.match(r.stderr, /ACCESS_PASSWORD/);
+  });
+  await t('프록시 뒤(TRUST_PROXY, 127.0.0.1)여도 비밀번호 없이는 시작하지 않는다', async () => {
+    const r = cp.spawnSync(process.execPath, [path.join(__dirname, '..', 'src', 'server.js')], { env: { ...process.env, HOST: '127.0.0.1', TRUST_PROXY: '1', PORT: '18794', ACCESS_PASSWORD: '', PUBLIC_URL: 'https://intake.test', LOG_DIR: LOG }, encoding: 'utf8', timeout: 8000 });
+    assert.strictEqual(r.status, 1);
+  });
+
+  const sp = await start(SP, { HOST: '127.0.0.1', SHARED: '1', ACCESS_PASSWORD: PW, PUBLIC_URL: 'http://intake.test', ALLOWED_EMPLOYEES: '100123,100456' });
+  try {
+    await t('허용하지 않은 주소(Host)·다른 사이트(Origin) 요청은 거부, /healthz 는 허용', async () => {
+      assert.strictEqual((await call(SP, 'GET', '/api/state', { host: 'evil.test' })).status, 403);
+      assert.strictEqual((await call(SP, 'GET', '/api/state', { origin: 'http://evil.test' })).status, 403);
+      assert.strictEqual((await call(SP, 'GET', '/healthz', { host: 'anything' })).status, 200);
+    });
+    let A;
+    await t('비밀번호 전에는 상태만 보이고 변환·조회는 401', async () => {
+      const s = await call(SP, 'GET', '/api/state');
+      assert.strictEqual(s.json.accessRequired, true); assert.strictEqual(s.json.accessOk, false); assert.ok(s.cookie.startsWith('sid='));
+      A = s.cookie;
+      const f = await call(SP, 'POST', '/api/fixed', { cookie: A, body: { name: 'a.docx', data: docx } });
+      assert.strictEqual(f.status, 401); assert.strictEqual(f.json.code, 'ACCESS');
+      assert.strictEqual((await call(SP, 'GET', '/api/template', { cookie: A })).status, 401);
+      assert.strictEqual((await call(SP, 'POST', '/api/excel/export', { cookie: A, body: { orders: [] } })).status, 401);
+    });
+    await t('틀린 비밀번호는 거부, 맞으면 변환 가능 + 쿠키는 HttpOnly·SameSite=Strict', async () => {
+      assert.strictEqual((await call(SP, 'POST', '/api/access', { cookie: A, body: { password: 'nope' } })).status, 401);
+      const ok = await call(SP, 'POST', '/api/access', { cookie: A, body: { password: PW } });
+      assert.strictEqual(ok.status, 200);
+      assert.strictEqual((await call(SP, 'POST', '/api/fixed', { cookie: A, body: { name: 'a.docx', data: docx } })).json.orders.length, 2);
+      const raw = await new Promise((res) => http.get({ host: '127.0.0.1', port: SP, path: '/api/state', headers: { Host: 'intake.test' } }, (r) => res(r.headers['set-cookie'][0])));
+      assert.match(raw, /HttpOnly/); assert.match(raw, /SameSite=Strict/);
+    });
+    await t('허용 목록에 없는 사번은 연결 거부, 있는 사번은 연결', async () => {
+      assert.strictEqual((await call(SP, 'POST', '/api/login', { cookie: A, body: { employeeNo: '999999' } })).status, 403);
+      const l = await call(SP, 'POST', '/api/login', { cookie: A, body: { employeeNo: '100123' } });
+      assert.strictEqual(l.status, 200); assert.strictEqual(l.json.user.userId, '100123');
+    });
+    await t('사용자마다 세션이 분리된다 (B 는 A 의 사번 연결을 쓸 수 없다)', async () => {
+      const B = (await call(SP, 'GET', '/api/state')).cookie;
+      await call(SP, 'POST', '/api/access', { cookie: B, body: { password: PW } });
+      const st = await call(SP, 'GET', '/api/state', { cookie: B });
+      assert.strictEqual(st.json.user, null);
+      assert.strictEqual((await call(SP, 'POST', '/api/company', { cookie: B, body: { name: '아무개' } })).status, 401);
+      await call(SP, 'POST', '/api/login', { cookie: B, body: { employeeNo: '100456' } });
+      assert.strictEqual((await call(SP, 'GET', '/api/state', { cookie: A })).json.user.userId, '100123');
+      assert.strictEqual((await call(SP, 'GET', '/api/state', { cookie: B })).json.user.userId, '100456');
+    });
+    await t('접속 종료하면 같은 쿠키로 다시 들어갈 수 없다', async () => {
+      assert.strictEqual((await call(SP, 'POST', '/api/signout', { cookie: A, body: {} })).status, 200);
+      const f = await call(SP, 'POST', '/api/fixed', { cookie: A, body: { name: 'a.docx', data: docx } });
+      assert.strictEqual(f.status, 401);
+    });
+    await t('비밀번호를 5번 틀리면 잠긴다 (맞는 비밀번호도 잠금 중에는 거부)', async () => {
+      const C2 = (await call(SP, 'GET', '/api/state')).cookie;
+      let last;
+      for (let i = 0; i < 5; i++) last = await call(SP, 'POST', '/api/access', { cookie: C2, body: { password: 'bad' + i } });
+      const locked = await call(SP, 'POST', '/api/access', { cookie: C2, body: { password: PW } });
+      assert.strictEqual(locked.status, 429);
+    });
+    await t('접속 기록에 사번·동작은 남고 비밀번호·파일 이름은 남지 않는다', async () => {
+      await new Promise((r) => setTimeout(r, 300));
+      const txt = fs.readdirSync(LOG).filter((f) => f.startsWith('audit-')).map((f) => fs.readFileSync(path.join(LOG, f), 'utf8')).join('');
+      assert.match(txt, /"event":"login"/); assert.match(txt, /"emp":"100123"/); assert.match(txt, /"event":"access_fail"/); assert.match(txt, /"event":"convert"/);
+      assert.ok(!txt.includes(PW) && !txt.includes('bad0') && !txt.includes('a.docx') && !txt.includes('광동'));
+    });
+  } finally { sp.kill(); }
+
+  const ip = await start(18795, { HOST: '127.0.0.1', SHARED: '1', ACCESS_PASSWORD: PW, PUBLIC_URL: 'http://intake.test', ALLOWED_IPS: '10.9.9.0/24' });
+  try {
+    await t('허용 IP 밖에서는 접속 자체를 거부한다', async () => {
+      assert.strictEqual((await call(18795, 'GET', '/api/state')).status, 403);
+      assert.strictEqual((await call(18795, 'GET', '/index.html')).status, 403);
+    });
+  } finally { ip.kill(); }
+  const ip2 = await start(18796, { HOST: '127.0.0.1', SHARED: '1', ACCESS_PASSWORD: PW, PUBLIC_URL: 'http://intake.test', ALLOWED_IPS: '127.0.0.0/8' });
+  try {
+    await t('허용 IP 대역 안에서는 접속된다 (CIDR)', async () => { assert.strictEqual((await call(18796, 'GET', '/api/state')).status, 200); });
+  } finally { ip2.kill(); fs.rmSync(LOG, { recursive: true, force: true }); }
+
 
   console.log(`\n${pass}개 통과${process.exitCode ? ', 실패 있음' : ''}`);
 })();

@@ -15,7 +15,15 @@
   - 규칙 튜닝: `node src/fixed.js dump <파일>` 로 펼친 행을 보고, `node src/fixed.js run <파일>` 로 결과 확인.
 - **A. Claude 앱 변환** (사진·스캔·손글씨·제각각 양식): 화면의 "변환 방법 보기" → 빈 양식 `GET /api/template`(`excel.js exportTemplate`) + 요청문 `src/prompts/claude-app.md`(`GET /api/claude-prompt`) → Claude 앱이 채운 엑셀을 "엑셀 선택"으로 불러온다. 앱이 아닌 도구가 저장한 엑셀은 노란 칸이 빠져도 "확인필요 항목"에 적힌 사유를 버리지 않는다.
 - API 키가 있으면 사진·PDF는 기존 AI 읽기(`extract.js`)도 쓸 수 있다. 우선순위: docx·hwpx → 규칙 / PDF → 규칙, 안 되면 AI / 사진 → AI(키 없으면 A 안내).
-- 테스트: `npm test` (`test/run.js`, `test/fixtures/` 는 합성 의뢰서)
+- 테스트: `npm test` (서버 경로·공유 서버 모드 포함) (`test/run.js`, `test/fixtures/` 는 합성 의뢰서)
+
+## 공유 서버 (0.3.0)
+- 두 가지 모드: **내 PC 전용**(기본, 127.0.0.1, 접속 비밀번호 없음, `시작.bat`) / **공유 서버**(`HOST=0.0.0.0`, `SHARED=1`, `TRUST_PROXY=1` 중 하나). 공유 서버는 `ACCESS_PASSWORD` 없이는 시작하지 않는다(`src/config.js`).
+- 사용자별 세션(`server.js`): 사번 연결·코드표 캐시는 세션에 둔다(전역 변수 금지). 접속 비밀번호 → 사번 연결 순서. 비밀번호 5회 실패 시 IP 10분 차단, `ALLOWED_IPS`/`ALLOWED_EMPLOYEES`/Host·Origin 검사, 쿠키 HttpOnly·SameSite=Strict(HTTPS면 Secure).
+- 접속 기록은 `src/audit.js` 로만: 사번·시각·IP·동작·건수만. 의뢰서 내용, 업체명, 파일 이름, 비밀번호는 기록하지 않는다.
+- 배포: `deploy/install.sh`(Linux/systemd), `deploy/install.ps1`(Windows 예약 작업), `deploy/check.js`, `.env.server.example`, `deploy/nginx.conf.example`. 관리자 문서 `docs/서버배포.md`, 담당자 1장 안내서 `public/guide.html`(`/guide.html`, 인쇄용) + `docs/담당자_사용안내서.pdf`.
+- 스크립트나 서버 보안 로직을 고치면 `npm test`(공유 서버 모드 테스트 포함)를 돌린다. CSP 때문에 HTML 에 인라인 스크립트를 넣지 말 것(별도 .js 파일).
+- 미검증: `install.ps1`(Windows 에서 실행해 보지 못함), `install.sh` 의 systemd 등록 단계(샌드박스에 systemd 없음), nginx 예시, 실제 브라우저의 PDF 미리보기와 HSTS/Secure 쿠키 동작.
 
 ## 구조
 `src/server.js` 로컬 서버·보안검사 / `kafri-core.js` 연구관리시스템 접속(기존 코드) / `extract.js` Claude API 추출 /

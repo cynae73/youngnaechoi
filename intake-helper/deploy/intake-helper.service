@@ -1,0 +1,23 @@
+# systemd 서비스 템플릿. install.sh 가 아래 @로 감싼 자리를 채워 /etc/systemd/system/ 에 설치합니다.
+[Unit]
+Description=접수 도우미 (민원접수 변환 도우미)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@USER@
+WorkingDirectory=@DIR@
+ExecStart=@NODE@ @DIR@/src/server.js
+Restart=on-failure
+RestartSec=5
+# 최소 권한
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=@DIR@/logs
+# 로그는 journalctl -u intake-helper 로 볼 수 있습니다.
+
+[Install]
+WantedBy=multi-user.target

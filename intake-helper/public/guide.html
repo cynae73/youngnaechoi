@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>접수 도우미 사용 안내</title>
+<style>
+@font-face { font-family: Pretendard; src: url(/fonts/PretendardVariable.woff2) format('woff2-variations'); font-weight: 45 920; }
+:root { --ink: #17212B; --ink-2: #4A5866; --line: #D3DAE0; --accent: #1F49C8; --bg: #EEF1F4; --paper: #fff; --warn: #FFE45C; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.55 Pretendard, 'Malgun Gothic', system-ui, sans-serif; }
+.page { width: 210mm; min-height: 297mm; margin: 16px auto; padding: 13mm 14mm; background: var(--paper); box-shadow: 0 1px 6px rgba(0,0,0,.12); }
+header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid var(--ink); padding-bottom: 8px; }
+h1 { margin: 0; font-size: 22px; letter-spacing: -.01em; }
+header p { margin: 0; color: var(--ink-2); font-size: 12px; }
+.addr { margin: 10px 0 12px; padding: 8px 12px; border: 1px solid var(--line); border-left: 4px solid var(--accent); display: flex; gap: 18px; flex-wrap: wrap; }
+.addr b { font-size: 15px; }
+.addr .blank { display: inline-block; min-width: 150px; border-bottom: 1px solid var(--ink-2); }
+h2 { margin: 12px 0 5px; font-size: 14px; display: flex; align-items: center; gap: 7px; }
+h2 i { font-style: normal; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; }
+p, ul, ol { margin: 3px 0; }
+ul, ol { padding-left: 18px; }
+table { width: 100%; border-collapse: collapse; margin: 4px 0; font-size: 12.5px; }
+th, td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; vertical-align: top; }
+th { background: #F4F6F8; font-weight: 600; white-space: nowrap; }
+.y { background: var(--warn); padding: 0 5px; border-radius: 2px; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+.note { margin-top: 10px; padding: 8px 12px; background: #FFF9DB; border: 1px solid #E9D86A; font-size: 12.5px; }
+.note b { color: #7A5B00; }
+footer { margin-top: 10px; padding-top: 7px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; color: var(--ink-2); font-size: 12px; }
+footer .blank { display: inline-block; min-width: 130px; border-bottom: 1px solid var(--ink-2); }
+.tools { width: 210mm; margin: 12px auto 0; text-align: right; }
+.tools button { font: inherit; padding: 6px 14px; cursor: pointer; }
+@page { size: A4; margin: 0; }
+@media print { body { background: #fff; } .page { margin: 0; box-shadow: none; width: auto; min-height: 0; height: 297mm; overflow: hidden; } .tools { display: none; } }
+@media (max-width: 820px) { .page { width: auto; margin: 0; padding: 16px; } .tools { width: auto; padding: 8px 16px 0; } .cols { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="tools"><button type="button" id="btnPrint">인쇄 (A4 1장)</button></div>
+<main class="page">
+  <header>
+    <div><h1>접수 도우미 사용 안내</h1><p>시험검사의뢰서 → 민원접수 등록 값으로 바꾸고, 사람이 확인한 뒤 접수하는 프로그램</p></div>
+    <p>고객지원팀 담당자용</p>
+  </header>
+
+  <div class="addr">
+    <span>접속 주소 <b id="url"><span class="blank"></span></b></span>
+    <span>접속 비밀번호 <span class="blank"></span> <small>(관리자에게 받으세요)</small></span>
+  </div>
+
+  <h2><i>1</i>들어가기</h2>
+  <ol>
+    <li>브라우저(Chrome·Edge)로 위 주소를 열고 <b>접속 비밀번호</b>를 입력합니다.</li>
+    <li>오른쪽 위 <b>"서버 연결 안 됨"</b>을 눌러 <b>본인 사번</b>으로 연결합니다. 접수자는 이 사번으로 기록됩니다.</li>
+  </ol>
+
+  <h2><i>2</i>의뢰서 불러오기 — 파일 종류에 따라</h2>
+  <table>
+    <tr><th>docx · hwpx · 글자 있는 PDF</th><td><b>"파일 선택"</b>에 올리면 바로 읽습니다. 매번 같은 양식으로 오는 의뢰서에 알맞습니다. (.hwp 는 한글에서 hwpx 로, .doc 는 docx 로 다시 저장)</td></tr>
+    <tr><th>사진 · 스캔 · 손글씨<br>양식이 제각각인 의뢰서</th><td><b>"변환 방법 보기"</b>를 누릅니다. ① 양식 엑셀 받기 → ② 요청문 복사 → ③ Claude 앱(claude.ai)에 사진, 양식 엑셀, 요청문을 올려 채운 엑셀 받기 → ④ 이 화면의 <b>"엑셀 선택"</b>으로 불러오기</td></tr>
+    <tr><th>여러 건 한꺼번에</th><td><b>"폴더 선택"</b>: 폴더 안 파일은 각각 한 건, 하위 폴더는 본지+별첨 한 묶음으로 읽습니다.</td></tr>
+  </table>
+
+  <div class="cols">
+    <div>
+      <h2><i>3</i>검토 · 확정</h2>
+      <ul>
+        <li>왼쪽 원본과 오른쪽 입력값을 <b>나란히 보며</b> 대조합니다.</li>
+        <li><span class="y">노란 칸</span>은 읽기가 불확실하거나 순서로만 판단한 값입니다. 원본과 맞으면 <b>"맞음"</b>, 다르면 고칩니다.</li>
+        <li>오류(빨간 표시)가 있으면 확정할 수 없습니다. 업체명, 휴대폰, 의뢰목적, 시료명, 식품유형, 시료량, 시험항목은 꼭 있어야 합니다.</li>
+        <li>접수 1건은 <b>시료 1건</b>입니다. 시료가 여러 개면 여러 건으로 나뉩니다.</li>
+      </ul>
+    </div>
+    <div>
+      <h2><i>4</i>등록 · 마치기</h2>
+      <ul>
+        <li>"드라이런"은 서버로 <b>보낼 값을 미리 보는 것</b>입니다. <b>연구관리시스템에는 저장되지 않습니다.</b> 실제 접수는 KAFRI 민원접수 등록 화면에서 하세요.</li>
+        <li>접수번호·시료번호는 서버가 부여합니다. 의뢰서에 손으로 쓴 번호는 참고용입니다.</li>
+        <li>일을 마치면 <b>"엑셀로 저장"</b> 후 <b>"접속 종료"</b>를 누릅니다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>꼭 지켜 주세요</b>
+    <ul>
+      <li><b>브라우저를 닫거나 새로 고치면 불러온 내용이 사라집니다.</b> 작업 중에는 "엑셀로 저장"을 눌러 두세요.</li>
+      <li>접속 비밀번호와 사번을 다른 사람과 <b>공유하지 마세요.</b> 접속 기록(사번, 시각)이 서버에 남습니다.</li>
+      <li>Claude 앱 변환은 의뢰서 사진(업체명, 연락처, 사업자번호)이 <b>외부 서비스로 전송</b>됩니다. 기관 정보보안 정책에 따라 사용하세요. docx · hwpx · PDF 변환은 외부로 나가지 않습니다.</li>
+      <li>이름·번호·주소가 틀리면 청구와 성적서 오류로 이어집니다. 사업자번호가 다르다는 경고가 뜨면 반드시 원본을 확인하세요.</li>
+    </ul>
+  </div>
+
+  <footer>
+    <span>문제가 생기면 화면의 오류 문구를 캡처해 관리자에게 알려 주세요.</span>
+    <span>관리자 연락처 <span class="blank"></span></span>
+  </footer>
+</main>
+<script src="/guide.js"></script>
+</body>
+</html>

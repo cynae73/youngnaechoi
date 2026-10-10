@@ -27,6 +27,8 @@
     <div class="rail-tools">
       <button type="button" class="btn btn-quiet" id="btnExport" disabled>엑셀로 저장</button>
       <button type="button" class="btn btn-quiet" id="btnCodes">기초코드 보기</button>
+      <a class="btn btn-quiet" href="/guide.html" target="_blank" rel="noopener" id="lnkGuide">사용 안내(1장)</a>
+      <button type="button" class="btn btn-quiet" id="btnSignout" hidden>접속 종료</button>
     </div>
   </nav>
 
@@ -125,11 +127,22 @@
 <dialog id="dlgLogin">
   <form method="dialog" id="formLogin">
     <h2>연구관리시스템에 연결</h2>
-    <p class="dlg-p">사번으로 연결합니다. 비밀번호는 없습니다. 사번은 이 PC의 메모리에만 두고 창을 닫으면 사라집니다. 접수자는 이 사번으로 기록됩니다.</p>
+    <p class="dlg-p" id="loginNote">사번으로 연결합니다. 비밀번호는 없습니다. 사번은 이 PC의 메모리에만 두고 창을 닫으면 사라집니다. 접수자는 이 사번으로 기록됩니다.</p>
     <label class="lab" for="inEmp">사번</label>
     <input id="inEmp" class="inp" inputmode="numeric" autocomplete="off" maxlength="10">
     <p class="err" id="loginErr" role="alert"></p>
     <div class="dlg-act"><button type="button" class="btn" id="loginCancel">취소</button><button type="submit" class="btn btn-primary" id="loginGo">연결</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlgAccess">
+  <form method="dialog" id="formAccess">
+    <h2>접속 비밀번호</h2>
+    <p class="dlg-p">이 서버를 사용하려면 관리자가 알려 준 접속 비밀번호를 입력하세요.</p>
+    <label class="lab" for="inPw">접속 비밀번호</label>
+    <input id="inPw" class="inp" type="password" autocomplete="off">
+    <p class="err" id="accessErr" role="alert"></p>
+    <div class="dlg-act"><button type="submit" class="btn btn-primary" id="accessGo">들어가기</button></div>
   </form>
 </dialog>
 

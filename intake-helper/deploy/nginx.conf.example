@@ -1,0 +1,23 @@
+# nginx 로 HTTPS 를 받고 접수 도우미(127.0.0.1:8791)로 넘기는 예시.
+# .env 는 HOST=127.0.0.1, PUBLIC_URL=https://intake.example.go.kr, TRUST_PROXY=1 로 합니다.
+server {
+    listen 80;
+    server_name intake.example.go.kr;
+    return 301 https://$host$request_uri;
+}
+server {
+    listen 443 ssl;
+    server_name intake.example.go.kr;
+    ssl_certificate     /etc/ssl/certs/intake.crt;
+    ssl_certificate_key /etc/ssl/private/intake.key;
+
+    client_max_body_size 64m;          # .env 의 MAX_UPLOAD_MB 이상으로
+
+    location / {
+        proxy_pass http://127.0.0.1:8791;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;   # 반드시 덮어쓰기(접속자가 보낸 값을 믿지 않도록 $proxy_add_x_forwarded_for 를 쓰지 마세요)
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;       # 큰 PDF 변환 시간
+    }
+}
