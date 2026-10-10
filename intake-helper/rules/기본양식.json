@@ -1,0 +1,76 @@
+{
+  "name": "기본 시험검사의뢰서",
+  "_설명": "라벨 사전입니다. 실제 의뢰서 양식과 다르면 labels 에 그 양식의 글자를 추가하세요. 파일 이름이 _ 로 시작하거나 .json 이 아니면 무시됩니다. 같은 폴더에 양식별로 파일을 더 두면 가장 잘 맞는 규칙이 자동으로 선택됩니다.",
+  "signature": ["시험검사", "의뢰서"],
+  "minMatched": 4,
+  "sections": [
+    { "id": "requester", "match": ["의뢰인", "의뢰업체", "의뢰인정보", "의뢰업체정보", "신청인", "신청인정보"] },
+    { "id": "billing",   "match": ["계산서", "계산서정보", "세금계산서", "세금계산서정보", "청구정보", "계산서발행"] },
+    { "id": "report",    "match": ["성적서", "성적서수령", "성적서발급", "성적서정보"] },
+    { "id": "sample",    "match": ["시료", "시료정보", "시료의정보", "검체정보"] }
+  ],
+  "fields": [
+    { "path": "requestDate",       "labels": ["의뢰일", "의뢰일자", "접수일", "작성일", "신청일"] },
+    { "path": "receiptNoHint",     "labels": ["접수번호"] },
+
+    { "path": "requester.name",    "labels": ["업체명", "상호", "회사명", "의뢰업체명", "기관명"], "section": "requester" },
+    { "path": "billing.name",      "labels": ["업체명", "상호", "회사명", "계산서업체명", "계산서상호"], "section": "billing" },
+
+    { "path": "requester.rep",     "labels": ["대표자", "대표자명", "대표"], "section": "requester" },
+    { "path": "_billing.rep",      "labels": ["대표자", "대표자명", "대표"], "section": "billing" },
+
+    { "path": "requester.addr",    "labels": ["주소", "소재지", "업체주소"], "section": "requester" },
+    { "path": "_billing.addr",     "labels": ["주소", "소재지", "사업장주소"], "section": "billing" },
+    { "path": "report.addr",       "labels": ["성적서수령주소", "성적서수령처", "성적서주소", "수령주소", "수령처", "주소"], "section": "report" },
+
+    { "path": "requester.tel",     "labels": ["전화", "전화번호", "tel", "연락처"], "section": "requester" },
+    { "path": "requester.fax",     "labels": ["팩스", "fax", "팩스번호"], "section": "requester" },
+    { "path": "requester.mobile",  "labels": ["핸드폰", "휴대폰", "휴대전화", "핸드폰번호", "휴대폰번호", "hp", "mobile"], "section": "requester" },
+    { "path": "requester.email",   "labels": ["이메일", "email", "메일", "메일주소", "이메일주소"], "section": "requester" },
+    { "path": "requester.contact", "labels": ["의뢰인", "담당자", "담당자명", "의뢰자", "성명", "이름"], "section": "requester" },
+
+    { "path": "billing.bizno",     "labels": ["사업자번호", "사업자등록번호", "사업자등록no", "등록번호"] },
+    { "path": "billing.email",     "labels": ["이메일", "email", "메일", "계산서이메일", "계산서메일", "세금계산서이메일"], "section": "billing" },
+    { "path": "billing.contact",   "labels": ["담당자연락처", "계산서담당자연락처", "담당자전화", "담당자휴대폰", "연락처", "전화", "핸드폰"], "section": "billing" },
+
+    { "path": "report.korCopies",  "labels": ["국문부수", "성적서국문부수", "국문"] },
+    { "path": "report.engCopies",  "labels": ["영문부수", "성적서영문부수", "영문"] },
+    { "path": "report.copiesRaw",  "labels": ["성적서부수", "부수", "발급부수"] },
+    { "path": "report.delivery",   "labels": ["성적서전달방법", "전달방법", "통보방법", "수령방법", "성적서수령방법"], "type": "check", "multi": true },
+
+    { "path": "purpose",           "labels": ["의뢰목적", "검사목적", "시험목적", "목적"], "type": "check" },
+    { "path": "storage",           "labels": ["보관방법", "보관조건", "시료보관"], "type": "check" },
+
+    { "path": "sample.name",       "labels": ["시료명", "제품명", "검체명", "품명"] },
+    { "path": "sample.foodType",   "labels": ["식품유형", "식품의유형", "유형", "재질"] },
+    { "path": "sample.kind",       "labels": ["시료구분", "시료종류", "검체구분"], "type": "check" },
+    { "path": "sample.amountRaw",  "labels": ["시료량", "시료의량", "검체량", "수량", "포장단위"] },
+    { "path": "sample.lot",        "labels": ["제조번호", "lot", "lotno", "로트번호"] },
+    { "path": "sample.mfgDate",    "labels": ["제조일자", "제조일", "생산일자"] },
+    { "path": "sample.expDate",    "labels": ["유통기한", "소비기한", "유통기한(소비기한)"] },
+
+    { "path": "items",             "labels": ["시험항목", "검사항목", "의뢰항목", "시험검사항목"], "type": "items" },
+    { "path": "remark",            "labels": ["비고", "기타사항", "특이사항"] }
+  ],
+  "sampleTable": {
+    "minColumns": 3,
+    "columns": {
+      "sample.name":      ["시료명", "제품명", "검체명", "품명"],
+      "sample.foodType":  ["식품유형", "식품의유형", "유형", "재질", "식품유형/재질"],
+      "sample.kind":      ["시료구분", "시료종류"],
+      "sample.amountRaw": ["시료량", "시료의량", "검체량", "수량", "포장단위"],
+      "sample.lot":       ["제조번호", "lot", "lotno", "로트번호"],
+      "sample.mfgDate":   ["제조일자", "제조일", "생산일자"],
+      "sample.expDate":   ["유통기한", "소비기한", "유통기한(소비기한)"],
+      "items":            ["시험항목", "검사항목", "의뢰항목", "시험검사항목"],
+      "spec":             ["기준", "규격", "기준규격", "시험기준"]
+    }
+  },
+  "itemTable": {
+    "columns": {
+      "name": ["시험항목", "검사항목", "의뢰항목", "항목"],
+      "spec": ["기준", "규격", "기준규격", "시험기준"],
+      "note": ["비고"]
+    }
+  }
+}

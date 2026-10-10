@@ -38,15 +38,23 @@
 
       <div class="source" id="dropZone">
         <div class="source-main">
-          <h2>의뢰서 사진·PDF</h2>
-          <p>본지와 별첨을 함께 고르면 한 건의 의뢰로 읽을 수 있습니다. 이 화면으로 파일을 끌어다 놓아도 됩니다.</p>
+          <h2>의뢰서 파일 <span class="tag">docx · hwpx · PDF · 사진</span></h2>
+          <p>docx · hwpx · 글자가 있는 PDF는 이 PC에서 양식 규칙으로 바로 읽습니다(AI 키 불필요). 사진·스캔은 AI 키가 있으면 바로 읽고, 없으면 아래 "Claude 앱으로 변환"을 쓰세요. 이 화면으로 파일을 끌어다 놓아도 됩니다.</p>
           <fieldset class="seg" id="groupMode">
-            <legend class="sr">여러 파일을 고를 때</legend>
-            <label><input type="radio" name="gm" value="bundle" checked> 한 건의 의뢰로 읽기(본지+별첨)</label>
+            <legend class="sr">여러 파일을 고를 때 (AI로 읽는 사진·PDF)</legend>
+            <label><input type="radio" name="gm" value="bundle" checked> 사진·PDF는 한 건의 의뢰로 읽기(본지+별첨)</label>
             <label><input type="radio" name="gm" value="each"> 파일마다 따로 읽기</label>
           </fieldset>
         </div>
-        <div class="source-act"><button type="button" class="btn btn-primary" id="btnFiles">파일 선택</button><input id="inFiles" type="file" accept="image/*,application/pdf" multiple hidden></div>
+        <div class="source-act"><button type="button" class="btn btn-primary" id="btnFiles">파일 선택</button><input id="inFiles" type="file" accept="image/*,application/pdf,.pdf,.docx,.hwpx,.hwp,.doc" multiple hidden></div>
+      </div>
+
+      <div class="source">
+        <div class="source-main">
+          <h2>Claude 앱으로 변환 <span class="tag">AI 키 불필요</span></h2>
+          <p>사진·스캔·손글씨, 양식이 제각각인 의뢰서용입니다. Claude 앱(구독)에 사진과 빈 양식을 올려 접수 양식 엑셀로 받은 뒤, 아래 "엑셀"로 불러옵니다.</p>
+        </div>
+        <div class="source-act"><button type="button" class="btn" id="btnGuide">변환 방법 보기</button></div>
       </div>
 
       <div class="source">
@@ -60,7 +68,7 @@
       <div class="source">
         <div class="source-main">
           <h2>엑셀</h2>
-          <p>이 도우미가 저장한 엑셀이나 예전 양식(의뢰서목록)을 불러옵니다. 노란 칸은 확인 필요로 표시됩니다.</p>
+          <p>이 도우미가 저장한 엑셀, Claude 앱이 채워 준 양식 엑셀, 예전 양식(의뢰서목록)을 불러옵니다. 노란 칸은 확인 필요로 표시됩니다.</p>
         </div>
         <div class="source-act"><button type="button" class="btn" id="btnExcel">엑셀 선택</button><input id="inExcel" type="file" accept=".xlsx" hidden></div>
       </div>

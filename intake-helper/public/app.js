@@ -79,11 +79,11 @@ function renderChips() {
   c.textContent = u ? `${S.state.demo ? '데모 ' : ''}연결됨 ${u.userId}${u.userNm ? ' ' + u.userNm : ''}` : '서버 연결 안 됨';
   c.classList.toggle('is-on', !!u);
   const a = $('#chipAi');
-  a.textContent = S.state.hasKey ? 'AI 읽기 사용 가능' : 'AI 키 없음: 엑셀만 가능';
+  a.textContent = S.state.hasKey ? 'AI 읽기 사용 가능' : 'AI 키 없음: 고정 양식·엑셀 사용';
   a.classList.toggle('is-on', S.state.hasKey);
   const n = $('#aiNote');
   n.hidden = S.state.hasKey;
-  n.textContent = '이 PC에 AI 키가 설정되어 있지 않아 사진·PDF는 읽을 수 없습니다. 엑셀 불러오기를 쓰거나, 폴더의 .env 파일에 ANTHROPIC_API_KEY 를 넣고 다시 실행하세요.';
+  n.textContent = '이 PC에는 AI 키가 없습니다. docx · hwpx · 글자가 있는 PDF는 바로 읽을 수 있고, 사진·스캔은 "Claude 앱으로 변환"을 이용하세요. (AI 키를 쓰려면 폴더의 .env 에 ANTHROPIC_API_KEY 를 넣고 다시 실행)';
 }
 async function refreshState() { S.state = await api('/api/state'); renderChips(); }
 
@@ -110,11 +110,30 @@ async function prepFile(file, key) {
 /* ── 읽기 대기열 ───────────────────────────────────── */
 const jobs = [];
 let running = 0;
-const isReadable = (f) => /\.(jpe?g|png|webp|gif|pdf)$/i.test(f.name) || /^image\//.test(f.type) || f.type === 'application/pdf';
+const FIXED_EXT = /\.(docx|hwpx|hwp|doc)$/i;
+const isFixedDoc = (f) => FIXED_EXT.test(f.name);
+const isPdf = (f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+const isReadable = (f) => isFixedDoc(f) || isPdf(f) || /\.(jpe?g|png|webp|gif)$/i.test(f.name) || /^image\//.test(f.type);
 const natural = (a, b) => a.localeCompare(b, 'ko', { numeric: true });
 
+/* 읽기 방법을 고른다:  fixed = 고정 양식 규칙(키 불필요) · auto = 규칙 먼저, 안 되면 AI · ai = AI · 키가 없는 사진은 Claude 앱 안내 */
+function planJobs(groups) {
+  const out = [];
+  let photos = 0;
+  groups.forEach((g) => {
+    const fs = g.files;
+    if (fs.length === 1 && isFixedDoc(fs[0].file)) { out.push({ ...g, kind: 'fixed' }); return; }
+    if (S.state.hasKey) { out.push({ ...g, kind: fs.length === 1 && isPdf(fs[0].file) ? 'auto' : 'ai' }); return; }
+    fs.forEach((x) => {
+      if (isFixedDoc(x.file) || isPdf(x.file)) out.push({ label: x.key, kind: 'fixed', files: [x] });
+      else photos += 1;
+    });
+  });
+  if (photos) { toast(`사진 ${photos}장은 이 PC에서 읽을 수 없습니다. Claude 앱으로 변환하는 방법을 안내합니다.`, true); openGuide(); }
+  return out;
+}
 function enqueue(list) {
-  if (!S.state.hasKey) { toast('AI 키가 없어 사진·PDF를 읽을 수 없습니다. 엑셀을 불러오세요.', true); return; }
+  if (!list.length) return;
   list.forEach((j) => jobs.push({ ...j, state: 'wait', msg: '', count: 0 }));
   $('#queueWrap').hidden = false;
   renderQueue(); pump();
@@ -122,12 +141,14 @@ function enqueue(list) {
 function renderQueue() {
   const q = $('#queue'); q.replaceChildren();
   const label = { wait: '대기', run: '읽는 중', done: '완료', err: '실패' };
+  const via = { fixed: '규칙', auto: '규칙→AI', ai: 'AI' };
   jobs.forEach((j) => {
     const li = h('li', null,
       h('span', { class: 'q-name', title: j.label }, j.label),
-      h('span', { class: j.state === 'err' ? 'bad' : j.state === 'done' ? 'ok' : '' }, label[j.state]),
+      h('span', { class: j.state === 'err' ? 'bad' : j.state === 'done' ? 'ok' : '' }, label[j.state], j.state === 'done' && j.via ? ` (${via[j.via] || j.via})` : ''),
       h('span', { class: 'num' }, j.state === 'done' ? `${j.count}건` : ''));
     if (j.msg) li.append(h('span', { class: 'q-err', role: 'alert' }, j.msg));
+    if (j.state === 'err' && j.guide) li.append(h('button', { type: 'button', class: 'btn btn-sm q-act', onclick: () => openGuide() }, 'Claude 앱으로 변환'));
     q.append(li);
   });
   const done = jobs.filter((j) => j.state === 'done' || j.state === 'err').length;
@@ -142,11 +163,32 @@ async function pump() {
     runJob(j).finally(() => { running -= 1; renderQueue(); pump(); });
   }
 }
+/* B. 고정 양식 규칙 변환 (서버가 docx · hwpx · PDF 글자를 읽는다) */
+async function readFixed(f) {
+  if (f.file.size > 30 * 1024 * 1024) throw new Error(`${f.file.name}: 파일이 30MB 를 넘습니다.`);
+  const buf = await f.file.arrayBuffer();
+  const out = await api('/api/fixed', { name: f.key, data: b64(buf) });
+  S.previews[f.key] = isPdf(f.file)
+    ? { url: URL.createObjectURL(new Blob([buf], { type: 'application/pdf' })), type: 'pdf', name: f.key }
+    : { type: 'text', text: out.preview || '', name: f.key };
+  return out;
+}
 async function runJob(j) {
   try {
-    const files = [];
-    for (const f of j.files) files.push(await prepFile(f.file, f.key));
-    const out = await api('/api/extract', { files });
+    let out = null;
+    if (j.kind === 'fixed' || j.kind === 'auto') {
+      try { out = await readFixed(j.files[0]); j.via = 'fixed'; }
+      catch (e) {
+        const soft = e.code === 'NO_TEXT' || e.code === 'NO_MATCH';
+        if (!(j.kind === 'auto' && soft && S.state.hasKey)) { j.guide = soft || e.code === 'BAD_FILE' ? true : false; throw e; }
+      }
+    }
+    if (!out) {
+      const files = [];
+      for (const f of j.files) files.push(await prepFile(f.file, f.key));
+      out = await api('/api/extract', { files });
+      j.via = j.kind === 'auto' ? 'ai' : j.kind;
+    }
     out.orders.forEach((o) => { o.source.note = out.notes || ''; S.orders.push(o); });
     j.count = out.orders.length; j.state = 'done';
     if (!out.orders.length) { j.state = 'err'; j.msg = out.notes || '접수 정보를 찾지 못했습니다.'; }
@@ -162,14 +204,18 @@ async function runJob(j) {
 
 function handleFiles(files) {
   const list = [...files].filter(isReadable).sort((a, b) => natural(a.name, b.name));
-  if (!list.length) { toast('사진(JPG·PNG·WEBP) 또는 PDF 파일을 선택하세요.', true); return; }
+  if (!list.length) { toast('docx · hwpx · PDF · 사진(JPG·PNG·WEBP) 파일을 선택하세요.', true); return; }
+  const docs = list.filter(isFixedDoc);
+  const rest = list.filter((f) => !isFixedDoc(f));
+  const groups = docs.map((f) => ({ label: f.name, files: [{ file: f, key: f.name }] }));
   const mode = $('input[name=gm]:checked').value;
-  if (mode === 'bundle' && list.length > 1) enqueue([{ label: `${list[0].name} 외 ${list.length - 1}개`, files: list.map((f) => ({ file: f, key: f.name })) }]);
-  else enqueue(list.map((f) => ({ label: f.name, files: [{ file: f, key: f.name }] })));
+  if (mode === 'bundle' && rest.length > 1 && S.state.hasKey) groups.push({ label: `${rest[0].name} 외 ${rest.length - 1}개`, files: rest.map((f) => ({ file: f, key: f.name })) });
+  else rest.forEach((f) => groups.push({ label: f.name, files: [{ file: f, key: f.name }] }));
+  enqueue(planJobs(groups));
 }
 function handleFolder(files) {
   const all = [...files].filter(isReadable);
-  if (!all.length) { toast('폴더에서 사진이나 PDF를 찾지 못했습니다.', true); return; }
+  if (!all.length) { toast('폴더에서 의뢰서 파일(docx · hwpx · PDF · 사진)을 찾지 못했습니다.', true); return; }
   const groups = new Map();
   all.forEach((f) => {
     const parts = (f.webkitRelativePath || f.name).split('/');
@@ -180,7 +226,34 @@ function handleFolder(files) {
     label: fs.length > 1 ? `${key} (${fs.length}개 파일)` : key,
     files: fs.sort((a, b) => natural(a.name, b.name)).map((f) => ({ file: f, key: f.webkitRelativePath || f.name })),
   }));
-  enqueue(list);
+  enqueue(planJobs(list));
+}
+
+/* A. Claude 앱으로 변환하는 방법 안내 */
+async function openGuide() {
+  const copyBtn = h('button', { type: 'button', class: 'btn btn-primary' }, '요청문 복사');
+  const area = h('textarea', { class: 'prompt', readonly: true, 'aria-label': 'Claude 앱에 붙여 넣을 요청문' });
+  let promptText = '';
+  copyBtn.onclick = async () => {
+    try { await navigator.clipboard.writeText(promptText); toast('요청문을 복사했습니다. Claude 앱 대화창에 붙여 넣으세요.'); }
+    catch { area.select(); toast('복사하지 못했습니다. 아래 글을 직접 선택해 복사하세요.', true); }
+  };
+  $('#infoBody').replaceChildren(
+    h('h2', null, 'Claude 앱으로 변환하기'),
+    h('p', { class: 'dlg-p' }, '사진·스캔·손글씨 의뢰서는 AI 키 없이 Claude 앱(구독)에서 접수 양식 엑셀로 바꿀 수 있습니다.'),
+    h('ol', { class: 'guide' },
+      h('li', null, '아래 "양식 엑셀 받기"로 빈 양식을 내려받습니다.'),
+      h('li', null, '"요청문 복사"를 누르고, Claude 앱(claude.ai)에서 새 대화를 엽니다.'),
+      h('li', null, '대화창에 의뢰서 사진·PDF(본지+별첨)와 받은 양식 엑셀을 첨부하고, 복사한 요청문을 붙여 넣어 보냅니다.'),
+      h('li', null, 'Claude가 채워 준 엑셀을 내려받아 이 화면의 "엑셀 선택"으로 불러옵니다.'),
+      h('li', null, '검토 단계에서 노란 칸(확인 필요)을 원본과 대조해 확정합니다. 사진 원본은 "원본 붙이기"로 옆에 놓고 볼 수 있습니다.')),
+    h('div', { class: 'guide-act' },
+      h('a', { class: 'btn', href: '/api/template', download: '접수양식_빈칸.xlsx' }, '양식 엑셀 받기'), copyBtn),
+    h('details', null, h('summary', null, '요청문 미리보기'), area),
+    h('p', { class: 'hint', style: 'margin-top:10px' }, '주의: 이 방법도 의뢰서 사진(업체명, 연락처, 사업자번호 포함)이 Claude 서비스로 전송됩니다. 기관의 정보보안 정책을 확인한 뒤 사용하세요.'));
+  $('#dlgInfo').showModal();
+  try { const r = await api('/api/claude-prompt'); promptText = r.text; area.value = r.text; }
+  catch (e) { toast(`요청문을 불러오지 못했습니다: ${e.message}`, true); }
 }
 async function handleExcel(file) {
   try {
@@ -392,6 +465,7 @@ function viewerEl(o) {
   const draw = () => {
     stage.replaceChildren();
     if (p.type === 'pdf') { stage.append(h('iframe', { src: p.url, title: `원본 ${p.name}` })); return; }
+    if (p.type === 'text') { stage.append(h('pre', { class: 'v-text', 'aria-label': `문서에서 읽은 글자: ${p.name}` }, p.text || '(글자 없음)')); return; }
     const img = h('img', { src: p.url, alt: `의뢰서 원본 ${p.name}` });
     const apply = () => { const w = stage.clientWidth || 400; img.style.width = `${Math.round(w * v.scale)}px`; img.style.transform = v.rot ? `rotate(${v.rot}deg)` : ''; img.style.transformOrigin = 'center'; img.style.margin = v.rot % 180 ? `${Math.round(w * v.scale / 3)}px 0` : '0'; };
     img.addEventListener('load', apply); stage.append(img); stage._apply = apply;
@@ -402,7 +476,7 @@ function viewerEl(o) {
     p.type === 'img' ? [h('button', { type: 'button', class: 'btn btn-sm', onclick: () => zoom(-0.25), 'aria-label': '축소' }, '−'), h('button', { type: 'button', class: 'btn btn-sm', onclick: () => zoom(0.25), 'aria-label': '확대' }, '+'),
       h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { v.scale = 1; stage._apply && stage._apply(); } }, '맞춤'),
       h('button', { type: 'button', class: 'btn btn-sm', onclick: () => { v.rot = (v.rot + 90) % 360; stage._apply && stage._apply(); } }, '회전')] : null,
-    h('span', { class: 'sp' }), h('a', { class: 'btn btn-sm', href: p.url, target: '_blank', rel: 'noopener', style: 'display:inline-flex;align-items:center;text-decoration:none' }, '새 창')), stage);
+    h('span', { class: 'sp' }), p.url ? h('a', { class: 'btn btn-sm', href: p.url, target: '_blank', rel: 'noopener', style: 'display:inline-flex;align-items:center;text-decoration:none' }, '새 창') : null), stage);
   draw(); return box;
 }
 
@@ -574,6 +648,7 @@ function wire() {
   $('#btnFiles').onclick = () => $('#inFiles').click();
   $('#btnFolder').onclick = () => $('#inFolder').click();
   $('#btnExcel').onclick = () => $('#inExcel').click();
+  $('#btnGuide').onclick = openGuide;
   $('#inFiles').onchange = (e) => { handleFiles(e.target.files); e.target.value = ''; };
   $('#inFolder').onchange = (e) => { handleFolder(e.target.files); e.target.value = ''; };
   $('#inExcel').onchange = (e) => { if (e.target.files[0]) handleExcel(e.target.files[0]); e.target.value = ''; };

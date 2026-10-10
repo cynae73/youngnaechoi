@@ -127,12 +127,17 @@ async function importWorkbook(buf) {
   const headers = [];
   main.getRow(1).eachCell({ includeEmpty: true }, (c, i) => { headers[i] = cellText(c).trim(); });
 
+  // 이 도우미가 저장한 파일이면 "노란 채움을 지움 = 사람이 확인함" 으로 본다.
+  // 그 밖의 파일(Claude 앱 등이 만든 것)은 노란 칸을 칠하지 못했더라도 적힌 확인 사유를 버리지 않는다.
+  const fromApp = wb.creator === '접수 도우미';
   const itemsById = {};
+  const itemFlag = {};
   if (itemsSheet) {
     itemsSheet.eachRow((row, n) => {
       if (n === 1) return;
       const id = cellText(row.getCell(1)).trim();
       if (!id) return;
+      if ([2, 3, 4].some((k) => isYellowFill(row.getCell(k)))) itemFlag[id] = true;
       (itemsById[id] = itemsById[id] || []).push({ name: cellText(row.getCell(2)).trim(), spec: cellText(row.getCell(3)).trim(), note: cellText(row.getCell(4)).trim() });
     });
   }
@@ -184,11 +189,23 @@ async function importWorkbook(buf) {
       Object.entries(map).forEach(([k, p]) => { if (o.memo.includes(k) && /불확실|확인/.test(o.memo)) o.flags[p] = o.flags[p] || '판독이 불확실합니다. 원본과 대조하세요'; });
     }
     const reasons = {};
-    if (raw.flagsText) raw.flagsText.split(/\r?\n/).forEach((l) => { const m = l.match(/^([\w.]+):\s*(.*)$/); if (m) reasons[m[1]] = m[2]; });
+    // 확인필요 항목 칸: "sample.lot: 사유" 또는 "제조번호(Lot): 사유" (열 제목으로 적어도 된다)
+    if (raw.flagsText) raw.flagsText.split(/\r?\n/).forEach((l) => {
+      const m = l.match(/^\s*([^:：]{1,30})[:：]\s*(.*)$/);
+      if (m) reasons[HEADER_PATH[m[1].trim()] || m[1].trim()] = m[2];
+    });
     flagged.forEach((p) => { if (!o.flags[p] || reasons[p]) o.flags[p] = reasons[p] || o.flags[p] || '엑셀에서 노란 칸으로 표시되어 있습니다'; });
-    // 새 양식에서 노란 채움을 지웠다면 사람이 확인한 것으로 본다 (시료량 추정 표시는 유지)
+    if (id && itemFlag[id]) flagged.add('items');
+    if (reasons['시험항목']) { reasons.items = reasons['시험항목']; delete reasons['시험항목']; }
+    if (flagged.has('items') && !o.flags.items) o.flags.items = reasons.items || '시험항목 칸이 노란색입니다. 원본과 대조하세요';
     if (raw.flagsText !== undefined && id) {
-      Object.keys(o.flags).forEach((p) => { if (!flagged.has(p) && p !== 'sample.amount') delete o.flags[p]; });
+      if (fromApp) {
+        // 노란 채움을 지웠다면 사람이 확인한 것으로 본다 (시료량 추정 표시는 유지)
+        Object.keys(o.flags).forEach((p) => { if (!flagged.has(p) && p !== 'sample.amount') delete o.flags[p]; });
+      } else {
+        const known = new Set([...Object.values(HEADER_PATH), 'items']);
+        Object.entries(reasons).forEach(([p, why]) => { if (known.has(p) && !o.flags[p]) o.flags[p] = why || '확인이 필요합니다'; });
+      }
     }
     orders.push(o);
   });
@@ -196,4 +213,58 @@ async function importWorkbook(buf) {
   return { orders, notes, sheet: main.name };
 }
 
-module.exports = { exportOrders, importWorkbook };
+/* 빈 양식. Claude 앱에 사진·PDF 와 함께 올려 채우게 한 뒤 "엑셀 불러오기"로 가져온다. */
+async function exportTemplate() {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = '접수 도우미 양식';
+  const head = (ws) => {
+    const r = ws.getRow(1);
+    r.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    r.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF17212B' } };
+    ws.views = [{ state: 'frozen', ySplit: 1 }];
+  };
+  const ws = wb.addWorksheet('접수');
+  ws.addRow(COLS.map((c) => c[0]));
+  head(ws);
+  COLS.forEach((c, i) => { ws.getColumn(i + 1).width = Math.max(10, Math.min(36, c[0].length * 2 + 4)); });
+  const wi = wb.addWorksheet('시험항목');
+  wi.addRow(['접수ID', '시험항목', '기준', '비고']);
+  head(wi);
+  [14, 30, 28, 30].forEach((w, i) => { wi.getColumn(i + 1).width = w; });
+
+  // 작성 예시 (불러오기에서는 읽지 않는 시트)
+  const ex = wb.addWorksheet('작성예시');
+  const demo = M.normalize({
+    id: 'A01', requestDate: '2026-10-02', receiptNoHint: '2610-0685',
+    requester: { name: '예시식품(주)', rep: '홍길동', addr: '경기도 예시시 예시로 1', tel: '031-000-0000', mobile: '010-1234-5678', email: 'qa@example.com', contact: '김담당' },
+    billing: { name: '예시식품(주)', bizno: '123-81-12342', email: 'tax@example.com', contact: '010-2222-3333' },
+    report: { addr: '경기도 예시시 예시로 1', korCopies: '1', engCopies: '0', delivery: '우편' },
+    purpose: '품질관리', storage: '상온',
+    sample: { name: '올리브유 캡슐', foodType: '건강기능식품', kind: '완제품', amountRaw: '500mg*10SC*6PTP/30g', lot: 'L2610A', mfgDate: '', expDate: '2028-10-01' },
+    items: [{ name: '벤조피렌', spec: '2.0 μg/kg 이하' }],
+    flags: { 'sample.lot': '손글씨가 흐려 L2610A 로 읽었습니다' },
+  });
+  ex.addRow(COLS.map((c) => c[0]));
+  head(ex);
+  const row = ex.addRow(COLS.map((c) => c[1](demo) || ''));
+  const lotIdx = COLS.findIndex((c) => c[2] === 'sample.lot') + 1;
+  row.getCell(lotIdx).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: YELLOW } };
+  ex.addRow([]);
+  ex.addRow(['시험항목 시트 예시']);
+  ex.addRow(['접수ID', '시험항목', '기준', '비고']);
+  ex.addRow(['A01', '벤조피렌', '2.0 μg/kg 이하', '']);
+
+  const wg = wb.addWorksheet('안내');
+  [
+    ['항목', '내용'],
+    ['접수 시트', '한 행이 접수 1건(시료 1건)입니다. 접수ID(A01, A02 …)는 직접 정하고, 시험항목 시트와 같은 값으로 연결합니다.'],
+    ['시험항목 시트', '접수ID 가 같은 행끼리 한 접수의 시험항목입니다. 한 접수에 항목이 여러 개면 행을 여러 개 씁니다.'],
+    ['노란 칸', '판독이 불확실한 칸은 노란색으로 칠하고, 접수 시트 맨 끝 "확인필요 항목" 칸에 "열 제목: 사유" 를 한 줄씩 적습니다.'],
+    ['작성예시 시트', '채우는 방법을 보여 주는 예시입니다. 접수 도우미는 이 시트를 읽지 않습니다.'],
+    ['접수번호', '의뢰서에 손으로 적힌 접수번호는 "접수번호(의뢰서 표기)" 칸에만 적습니다. 실제 접수번호는 서버가 부여합니다.'],
+  ].forEach((r, i) => { const rw = wg.addRow(r); if (i === 0) rw.font = { bold: true }; });
+  wg.getColumn(1).width = 16; wg.getColumn(2).width = 100;
+  return wb.xlsx.writeBuffer();
+}
+
+module.exports = { exportOrders, exportTemplate, importWorkbook, COL_HEADERS: COLS.map((c) => c[0]) };

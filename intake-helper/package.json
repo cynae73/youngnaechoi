@@ -1,1 +1,1 @@
-{"name":"kafri-intake-helper","version":"0.1.0","private":true,"description":"시험검사의뢰서 → KAFRI 민원접수 등록 도우미 (테스트 버전)","main":"src/server.js","scripts":{"start":"node src/server.js"},"dependencies":{"exceljs":"^4.4.0"}}
+{"name":"kafri-intake-helper","version":"0.2.0","private":true,"description":"시험검사의뢰서 → KAFRI 민원접수 등록 도우미 (테스트 버전)","main":"src/server.js","scripts":{"start":"node src/server.js","test":"node test/run.js"},"dependencies":{"exceljs":"^4.4.0","jszip":"^3.10.2","pdfjs-dist":"^3.11.174"}}

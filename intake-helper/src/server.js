@@ -18,6 +18,7 @@ const { DemoClient } = require('./demo');
 const M = require('./model');
 const X = require('./excel');
 const { extractBundle } = require('./extract');
+const fixed = require('./fixed');
 const company = require('./company');
 const codes = require('./codes');
 const reg = require('./register');
@@ -88,6 +89,19 @@ const routes = {
 
   'POST /api/extract': async ({ body }) => extractBundle(body.files),
 
+  // B. 고정 양식 문서(docx · hwpx · 글자 있는 PDF) 규칙 변환 — API 키 불필요
+  'POST /api/fixed': async ({ body }) => {
+    if (!body.data) throw Object.assign(new Error('파일이 비어 있습니다.'), { status: 400 });
+    try { return await fixed.convert(Buffer.from(body.data, 'base64'), String(body.name || '')); }
+    catch (e) { throw Object.assign(e, { status: e.status || 422 }); }
+  },
+
+  // A. Claude 앱에 붙여 넣을 요청문 (양식 열 이름을 채워 돌려준다)
+  'GET /api/claude-prompt': async () => ({
+    text: fs.readFileSync(path.join(__dirname, 'prompts', 'claude-app.md'), 'utf8').replace('{{COLUMNS}}', X.COL_HEADERS.join(' | ')),
+    template: '접수양식_빈칸.xlsx',
+  }),
+
   'POST /api/excel/import': async ({ body }) => X.importWorkbook(Buffer.from(body.data || '', 'base64')),
 
   'POST /api/company': async ({ body, res }) => {
@@ -137,12 +151,18 @@ const server = http.createServer(async (req, res) => {
         { 'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(`접수목록_${stamp}.xlsx`)}` });
     }
 
+    if (u.pathname === '/api/template' && req.method === 'GET') {
+      const buf = await X.exportTemplate();
+      return send(res, 200, Buffer.from(buf), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        { 'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent('접수양식_빈칸.xlsx')}` });
+    }
+
     const key = `${req.method} ${u.pathname}`;
     if (routes[key]) {
       const body = req.method === 'POST' ? await readBody(req) : {};
       let out;
       try { out = await routes[key]({ body, res, query: u.searchParams }); }
-      catch (e) { return fail(res, e.status || (e.code === 'NO_KEY' ? 400 : 500), e.message, e.code ? { code: e.code } : {}); }
+      catch (e) { return fail(res, e.status || (e.code === 'NO_KEY' ? 400 : 500), e.message, { ...(e.code ? { code: e.code } : {}), ...(e.report ? { report: e.report } : {}) }); }
       if (res.writableEnded || out === undefined) return undefined;
       return send(res, 200, out);
     }
@@ -165,7 +185,7 @@ server.listen(PORT, '127.0.0.1', () => {
   console.log(`  접수 도우미 ${pkg.version} (테스트 버전 · 드라이런)`);
   console.log(`  주소      http://127.0.0.1:${PORT}`);
   console.log(`  서버      ${DEMO ? '데모 모드 (KAFRI 에 접속하지 않음)' : (process.env.KAFRI_BASE_URL || require('./kafri-core').DEFAULT_BASE)}`);
-  console.log(`  AI 추출   ${process.env.ANTHROPIC_API_KEY ? '사용 가능' : '키 없음 (엑셀 불러오기만 가능)'}`);
+  console.log(`  AI 추출   ${process.env.ANTHROPIC_API_KEY ? '사용 가능' : '키 없음 (고정 양식 변환 · Claude 앱 변환 · 엑셀 불러오기 사용 가능)'}`);
   console.log('  이 창을 닫으면 프로그램이 종료됩니다.');
   console.log('');
 });
